@@ -65,7 +65,7 @@ public final class Main {
             LOG_DIRECTORY.mkdir();
         }
     }
-
+//hello
     private Main() {
     }
 
