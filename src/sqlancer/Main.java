@@ -49,6 +49,8 @@ import sqlancer.tidb.TiDBProvider;
 import sqlancer.yugabyte.ycql.YCQLProvider;
 import sqlancer.yugabyte.ysql.YSQLProvider;
 
+import static java.lang.Thread.sleep;
+
 public final class Main {
 
     public static final File LOG_DIRECTORY = new File("logs");
@@ -437,6 +439,41 @@ public final class Main {
             }
         }
 
+        //Tang:
+        public void runConfigurationTraining() throws Exception {
+            G state = createGlobalState();
+            stateToRepro = provider.getStateToReproduce(databaseName);
+            stateToRepro.seedValue = r.getSeed();
+            state.setState(stateToRepro);
+            logger = new StateLogger(databaseName, provider, options);
+            state.setRandomly(r);
+            state.setDatabaseName(databaseName);
+            state.setMainOptions(options);
+            state.setDbmsSpecificOptions(command);
+            state.setStateLogger(logger);
+
+            BaseConfigurationGenerator configGenerator = GeneralConfigurationGenerator
+                    .createGenerator(state.getDbmsSpecificOptions().getClass(),state);
+            state.setConfigurationGenerator(configGenerator);
+
+            for (BaseConfigurationGenerator.ConfigurationAction action :configGenerator.getAllActions()) {
+                try (C con = provider.createDatabase(state)) {
+                    QueryManager<C> manager = new QueryManager<>(state);
+                    state.setManager(manager);
+                    state.setConnection(con);
+                    if (options.logEachSelect()) {
+                        logger.writeCurrent(state.getState());
+                    }
+//                    state.getAflMonitor().clearCoverage();
+                    provider.generateDatabaseWithConfigurationTraining(state,action);
+//                    AFLMonitor.getInstance().refreshBuffer();
+//                    byte[] coverageBuf = AFLMonitor.getInstance().getCoverageBuf();
+                }
+            }
+//            configGenerator.calculateParameterWeights();
+        }
+
+        //TODO: Tang: run()函数是整个程序的入口
         public void run() throws Exception {
             G state = createGlobalState();
             stateToRepro = provider.getStateToReproduce(databaseName);
@@ -447,6 +484,8 @@ public final class Main {
             state.setDatabaseName(databaseName);
             state.setMainOptions(options);
             state.setDbmsSpecificOptions(command);
+
+
             try (C con = provider.createDatabase(state)) {
                 QueryManager<C> manager = new QueryManager<>(state);
                 try {
@@ -595,6 +634,8 @@ public final class Main {
             jc.usage();
             return options.getErrorExitCode();
         }
+        ExecutorService execService = Executors.newFixedThreadPool(options.getNumberConcurrentThreads());
+        DBMSExecutorFactory<?, ?, ?> executorFactory = nameToProvider.get(jc.getParsedCommand());
 
         Randomly.initialize(options);
         if (options.printProgressInformation()) {
@@ -604,6 +645,19 @@ public final class Main {
 
                     @Override
                     public void run() {
+                        try {
+                            execService.shutdownNow();
+                            execService.awaitTermination(3, TimeUnit.SECONDS);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        //Tang:close AFLMonitor
+                        try {
+                            AFLMonitor.getInstance().close();
+                            sleep(2000);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
                         System.out.println("Overall execution statistics");
                         System.out.println("============================");
                         System.out.println(formatInteger(nrQueries.get()) + " queries");
@@ -625,11 +679,12 @@ public final class Main {
             }
         }
 
-        ExecutorService execService = Executors.newFixedThreadPool(options.getNumberConcurrentThreads());
-        DBMSExecutorFactory<?, ?, ?> executorFactory = nameToProvider.get(jc.getParsedCommand());
+//        ExecutorService execService = Executors.newFixedThreadPool(options.getNumberConcurrentThreads());
+//        DBMSExecutorFactory<?, ?, ?> executorFactory = nameToProvider.get(jc.getParsedCommand());
 
         if (options.performConnectionTest()) {
             try {
+                AFLMonitor.getInstance();
                 executorFactory.getDBMSExecutor(options.getDatabasePrefix() + "connectiontest", new Randomly())
                         .testConnection();
             } catch (Exception e) {
@@ -640,6 +695,34 @@ public final class Main {
             }
         }
         final AtomicBoolean someOneFails = new AtomicBoolean(false);
+
+        //Tang: 1.SQL优先级训练
+        DBMSExecutor<?, ?, ?> executor = executorFactory.getDBMSExecutor(options.getDatabasePrefix() + 0, new Randomly(System.currentTimeMillis()));
+        try {
+            BaseConfigurationGenerator.isTrainingPhase=true;
+            executor.runConfigurationTraining();
+
+        } catch (IgnoreMeException e) {
+
+        } catch (Throwable reduce) {
+            reduce.printStackTrace();
+            executor.getStateToReproduce().exception = reduce.getMessage();
+            executor.getLogger().logFileWriter = null;
+            executor.getLogger().logException(reduce, executor.getStateToReproduce());
+
+        } finally {
+            BaseConfigurationGenerator.isTrainingPhase=false;
+            try {
+                if (options.logEachSelect()) {
+                    if (executor.getLogger().currentFileWriter != null) {
+                        executor.getLogger().currentFileWriter.close();
+                    }
+                    executor.getLogger().currentFileWriter = null;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
         for (int i = 0; i < options.getTotalNumberTries(); i++) {
             final String databaseName = options.getDatabasePrefix() + i;
@@ -663,6 +746,11 @@ public final class Main {
                         int maxNrDbs = options.getMaxGeneratedDatabases();
                         // run without a limit if maxNrDbs == -1
                         for (int i = 0; i < maxNrDbs || maxNrDbs == -1; i++) {
+                            //Tang: close when interrupted
+                            if (Thread.currentThread().isInterrupted()) {
+                                System.out.println("线程 " + databaseName + " 收到中断信号，正在退出...");
+                                break;
+                            }
                             Boolean continueRunning = run(options, execService, executorFactory, r, databaseName);
                             if (!continueRunning) {
                                 someOneFails.set(true);
@@ -771,6 +859,7 @@ public final class Main {
         }
     }
 
+    //Tang:打印每5秒的执行进度
     private static synchronized void startProgressMonitor() {
         if (progressMonitorStarted) {
             /*

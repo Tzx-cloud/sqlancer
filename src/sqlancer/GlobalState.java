@@ -5,6 +5,8 @@ import sqlancer.common.query.SQLancerResultSet;
 import sqlancer.common.schema.AbstractSchema;
 import sqlancer.common.schema.AbstractTable;
 
+import java.util.ArrayList;
+
 public abstract class GlobalState<O extends DBMSSpecificOptions<?>, S extends AbstractSchema<?, ?>, C extends SQLancerDBConnection> {
 
     protected C databaseConnection;
@@ -16,6 +18,7 @@ public abstract class GlobalState<O extends DBMSSpecificOptions<?>, S extends Ab
     private StateToReproduce state;
     private Main.QueryManager<C> manager;
     private String databaseName;
+    private BaseConfigurationGenerator configurationGenerator;
 
     public void setConnection(C con) {
         this.databaseConnection = con;
@@ -148,6 +151,18 @@ public abstract class GlobalState<O extends DBMSSpecificOptions<?>, S extends Ab
         }
     }
 
+    public void clearSchema() throws Exception {
+        schema.getDatabaseTables().clear();
+    }
+
+
     protected abstract S readSchema() throws Exception;
 
+    public BaseConfigurationGenerator getConfigurationGenerator() {
+        return configurationGenerator;
+    }
+
+    public void setConfigurationGenerator(BaseConfigurationGenerator configGenerator) {
+        configurationGenerator = configGenerator;
+    }
 }

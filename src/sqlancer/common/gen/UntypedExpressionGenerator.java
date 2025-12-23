@@ -19,12 +19,12 @@ public abstract class UntypedExpressionGenerator<E, C> implements ExpressionGene
     protected abstract E generateExpression(int depth);
 
     protected abstract E generateColumn();
-
     @SuppressWarnings("unchecked") // unsafe
     public <U extends UntypedExpressionGenerator<E, C>> U setColumns(List<C> columns) {
         this.columns = columns;
         return (U) this;
     }
+
 
     public E generateLeafNode() {
         if (Randomly.getBoolean() && !columns.isEmpty()) {

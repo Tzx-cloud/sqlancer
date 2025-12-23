@@ -3,6 +3,8 @@ package sqlancer.common.oracle;
 import sqlancer.GlobalState;
 import sqlancer.Reproducer;
 
+import java.sql.SQLException;
+
 public interface TestOracle<G extends GlobalState<?, ?, ?>> {
 
     void check() throws Exception;
@@ -14,4 +16,5 @@ public interface TestOracle<G extends GlobalState<?, ?, ?>> {
     default String getLastQueryString() {
         throw new AssertionError("Not supported!");
     }
+    default void genSelect()throws SQLException {}
 }

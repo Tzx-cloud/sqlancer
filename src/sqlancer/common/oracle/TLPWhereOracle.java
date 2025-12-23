@@ -1,13 +1,11 @@
 package sqlancer.common.oracle;
 
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import sqlancer.ComparatorHelper;
-import sqlancer.Randomly;
-import sqlancer.Reproducer;
-import sqlancer.SQLGlobalState;
+import sqlancer.*;
 import sqlancer.common.ast.newast.Expression;
 import sqlancer.common.ast.newast.Join;
 import sqlancer.common.ast.newast.Select;
@@ -73,6 +71,39 @@ public class TLPWhereOracle<Z extends Select<J, E, T, C>, J extends Join<E, T, C
     }
 
     @Override
+    public void genSelect() throws SQLException {
+        S s = state.getSchema();
+        AbstractTables<T, C> targetTables = TestOracleUtils.getRandomTableNonEmptyTables(s);
+        gen = gen.setTablesAndColumns(targetTables);
+
+        Select<J, E, T, C> select = gen.generateSelect();
+
+        boolean shouldCreateDummy = true;
+        select.setFetchColumns(gen.generateFetchColumns(shouldCreateDummy));
+        select.setJoinClauses(gen.getRandomJoinClauses());
+        select.setFromList(gen.getTableRefs());
+        select.setWhereClause(gen.generateBooleanExpression());
+        boolean orderBy = Randomly.getBooleanWithSmallProbability();
+        if (orderBy) {
+            select.setOrderByClauses(gen.generateOrderBys());
+        }
+
+
+        String optimizedQueryString =select.asString();
+        if (state.getOptions().logEachSelect()) {
+            state.getLogger().writeCurrent(optimizedQueryString);
+        }
+        try (Statement stat = state.getConnection().createStatement()) {
+            stat.executeQuery(optimizedQueryString);
+        } catch (SQLException e) {
+            Main.nrUnsuccessfulActions.addAndGet(1);
+            state.getLogger().writeCurrent(e.getMessage());
+            throw new IgnoreMeException();
+        }
+
+    }
+
+    @Override
     public void check() throws SQLException {
         reproducer = null;
         S s = state.getSchema();
@@ -116,6 +147,8 @@ public class TLPWhereOracle<Z extends Select<J, E, T, C>, J extends Join<E, T, C
         reproducer = new TLPWhereReproducer(firstQueryString, secondQueryString, thirdQueryString, originalQueryString,
                 firstResultSet, orderBy);
     }
+
+
 
     @Override
     public Reproducer<G> getLastReproducer() {

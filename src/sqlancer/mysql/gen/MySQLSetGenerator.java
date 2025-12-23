@@ -6,36 +6,54 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import sqlancer.BaseConfigurationGenerator;
 import sqlancer.MainOptions;
 import sqlancer.Randomly;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mysql.MySQLBugs;
 import sqlancer.mysql.MySQLGlobalState;
 
-public class MySQLSetGenerator {
+public class MySQLSetGenerator extends BaseConfigurationGenerator {
 
-    private final Randomly r;
+    private static volatile MySQLSetGenerator INSTANCE;
+
     private final StringBuilder sb = new StringBuilder();
 
     // currently, global options are only generated when a single thread is executed
     private boolean isSingleThreaded;
 
     public MySQLSetGenerator(Randomly r, MainOptions options) {
-        this.r = r;
-        this.isSingleThreaded = options.getNumberConcurrentThreads() == 1;
+        super(r, options);
+    }
+
+    @Override
+    protected String getDatabaseType() {
+        return "mysql";
     }
 
     public static SQLQueryAdapter set(MySQLGlobalState globalState) {
         return new MySQLSetGenerator(globalState.getRandomly(), globalState.getOptions()).get();
     }
-
-    private enum Scope {
-        GLOBAL, SESSION
+    @Override
+    protected String getActionName(Object action) {
+        return ((MySQLSetGenerator.Action) action).name();
     }
 
-    private enum Action {
+    @Override
+    public ConfigurationAction[] getAllActions() {
+        return MySQLSetGenerator.Action.values();
+    }
 
-        AUTOCOMMIT("autocommit", (r) -> 1, Scope.GLOBAL, Scope.SESSION), //
+
+    @Override
+    protected SQLQueryAdapter generateConfigForAction(Object action) {
+        MySQLSetGenerator.Action mysqlAction = (MySQLSetGenerator.Action) action;
+        // 重用原有的生成逻辑
+        return generateConfigForParameter(mysqlAction);
+    }
+    private enum Action implements ConfigurationAction{
+
+        //AUTOCOMMIT("autocommit", (r) -> 1, Scope.GLOBAL, Scope.SESSION), //
         BIG_TABLES("big_tables", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
         COMPLETION_TYPE("completion_type",
                 (r) -> Randomly.fromOptions("'NO_CHAIN'", "'CHAIN'", "'RELEASE'", "0", "1", "2"), Scope.GLOBAL), //
@@ -115,17 +133,30 @@ public class MySQLSetGenerator {
         UNIQUE_CHECKS("unique_checks", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION);
         // TODO: https://dev.mysql.com/doc/refman/8.0/en/switchable-optimizations.html
 
-        private String name;
-        private Function<Randomly, Object> prod;
-        private final Scope[] scopes;
+        private final GenericAction delegate;
 
         Action(String name, Function<Randomly, Object> prod, Scope... scopes) {
-            if (scopes.length == 0) {
-                throw new AssertionError(name);
-            }
-            this.name = name;
-            this.prod = prod;
-            this.scopes = scopes.clone();
+            this.delegate = new GenericAction(name, prod, scopes);
+        }
+
+        @Override
+        public String getName() {
+            return delegate.getName();
+        }
+
+        @Override
+        public Object generateValue(Randomly r) {
+            return delegate.generateValue(r);
+        }
+
+        @Override
+        public Scope[] getScopes() {
+            return delegate.getScopes();
+        }
+
+        @Override
+        public boolean canBeUsedInScope(Scope scope) {
+            return delegate.canBeUsedInScope(scope);
         }
 
         /*
@@ -147,18 +178,36 @@ public class MySQLSetGenerator {
             return sb.toString();
         }
 
-        public boolean canBeUsedInScope(Scope session) {
-            for (Scope scope : scopes) {
-                if (scope == session) {
-                    return true;
-                }
-            }
-            return false;
+
+
+
+    }
+    @Override
+    public SQLQueryAdapter generateConfigForParameter(ConfigurationAction action) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SET ");
+
+        // 选择作用域
+        Scope[] scopes = action.getScopes();
+        Scope randomScope = Randomly.fromOptions(scopes);
+
+        switch (randomScope) {
+            case GLOBAL:
+                sb.append("GLOBAL");
+                break;
+            case SESSION:
+                sb.append("SESSION");
+                break;
+            default:
+                throw new AssertionError(randomScope);
         }
 
-        public Scope[] getScopes() {
-            return scopes.clone();
-        }
+        sb.append(" ");
+        sb.append(action.getName());
+        sb.append(" = ");
+        sb.append(action.generateValue(r));
+
+        return new SQLQueryAdapter(sb.toString());
     }
 
     private SQLQueryAdapter get() {
@@ -186,12 +235,50 @@ public class MySQLSetGenerator {
             sb.append("SESSION");
         }
         sb.append(" ");
-        sb.append(a.name);
+        sb.append(a.getName());
         sb.append(" = ");
-        sb.append(a.prod.apply(r));
+        sb.append(a.generateValue(r));
         return new SQLQueryAdapter(sb.toString());
     }
 
+    @Override
+    public SQLQueryAdapter generateDefaultConfigForParameter(ConfigurationAction action) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SET ");
+
+        // 选择作用域
+        Scope[] scopes = action.getScopes();
+
+        if(scopes.length==2||scopes[0]==Scope.GLOBAL )sb.append("GLOBAL");
+        else sb.append("SESSION");
+//        switch (randomScope) {
+//            case GLOBAL:
+//                sb.append("GLOBAL");
+//                break;
+//            case SESSION:
+//                sb.append("SESSION");
+//                break;
+//            default:
+//                throw new AssertionError(randomScope);
+//        }
+
+        sb.append(" ");
+        sb.append(action.getName());
+        sb.append(" = DEFAULT");
+
+        return new SQLQueryAdapter(sb.toString());
+    }
+
+    public static BaseConfigurationGenerator getInstance(Randomly r, MainOptions options) {
+        if (INSTANCE == null) {
+            synchronized (MySQLSetGenerator.class) {
+                if (INSTANCE == null) {
+                    INSTANCE = new MySQLSetGenerator(r, options);
+                }
+            }
+        }
+        return INSTANCE;
+    }
     public static SQLQueryAdapter resetOptimizer() {
         return new SQLQueryAdapter("SET optimizer_switch='default'");
     }

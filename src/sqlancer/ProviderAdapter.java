@@ -13,6 +13,8 @@ import sqlancer.common.oracle.CompositeTestOracle;
 import sqlancer.common.oracle.TestOracle;
 import sqlancer.common.schema.AbstractSchema;
 
+import static sqlancer.ParameteraAwareGenerator.featureSet;
+
 public abstract class ProviderAdapter<G extends GlobalState<O, ? extends AbstractSchema<G, ?>, C>, O extends DBMSSpecificOptions<? extends OracleFactory<G>>, C extends SQLancerDBConnection>
         implements DatabaseProvider<G, O, C> {
 
@@ -45,6 +47,53 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     public Class<O> getOptionClass() {
         return optionClass;
     }
+
+    public Class<? extends ExpressionAction> getActionClass(){return ExpressionAction.class;}
+    @Override
+    public void generateDatabaseWithConfigurationTraining(G globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception{
+        //Tang: 生成配置参数并进行训练
+        ParameteraAwareGenerator parameterAwareGenerator = new ParameteraAwareGenerator(getActionClass());
+        List<? extends OracleFactory<G>> testOracleFactory = globalState.getDbmsSpecificOptions()
+                .getTestOracleFactory();
+        try {
+            for (int i = 0; i < BaseConfigurationGenerator.TRAINING_SAMPLES; i++) {
+                generateConfiguration(globalState, action);
+                generateDatabase(globalState);
+                checkViewsAreValid(globalState);
+                globalState.getManager().incrementCreateDatabase();
+                TestOracle<G> testOracle = testOracleFactory.get(0).create(globalState);
+                for (int j = 0; j <10000; j++) {
+                    try (OracleRunReproductionState localState = globalState.getState().createLocalState()) {
+                        assert localState != null;
+                        try {
+                            globalState.getManager().incrementSelectQueryCount();
+                            featureSet.clear();
+                            AFLMonitor.getInstance().clearCoverage();
+                            testOracle.genSelect();
+                            AFLMonitor.getInstance().refreshBuffer();
+                            parameterAwareGenerator.updateCounts();
+
+                            Main.nrSuccessfulActions.addAndGet(1);
+                        } catch (IgnoreMeException ignored) {
+                        } catch (AssertionError e) {
+                            e.printStackTrace();
+                            throw e;
+                        }
+                        localState.executedWithoutError();
+                    }
+                }
+            }
+            generateDefaultConfiguration(globalState, action);
+        }finally {
+            double[] featureProbabilities = parameterAwareGenerator.getFeatureProbabilities();
+            BaseConfigurationGenerator.parameterFeatureProbabilities.putIfAbsent(action.getName(), featureProbabilities.clone());
+            globalState.setSchema(null);
+            globalState.getConnection().close();
+        }
+
+    }
+
+
 
     @Override
     public Reproducer<G> generateAndTestDatabase(G globalState) throws Exception {
@@ -107,6 +156,9 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     }
 
     public abstract void generateDatabase(G globalState) throws Exception;
+    //Tang: 生成配置参数
+    public void generateConfiguration(G globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception{};
+    public void generateDefaultConfiguration(G globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception{};
 
     // QPG: entry function
     @Override

@@ -9,7 +9,7 @@ import sqlancer.Randomly.StringGenerationStrategy;
 
 @Parameters(separators = "=", commandDescription = "Options applicable to all DBMS")
 public class MainOptions {
-    public static final int NO_SET_PORT = -1;
+    public static final int NO_SET_PORT = 3306;
     public static final int NO_REDUCE_LIMIT = -1;
     public static final MainOptions DEFAULT_OPTIONS = new MainOptions();
 
@@ -67,10 +67,10 @@ public class MainOptions {
     private static double qpgProbability = 0.7;
 
     @Parameter(names = "--username", description = "The user name used to log into the DBMS")
-    private String userName = "sqlancer"; // NOPMD
+    private String userName = "root"; // NOPMD
 
     @Parameter(names = "--password", description = "The password used to log into the DBMS")
-    private String password = "sqlancer"; // NOPMD
+    private String password = "root" ; // NOPMD
 
     @Parameter(names = "--host", description = "The host used to log into the DBMS")
     private String host = null; // NOPMD

@@ -33,7 +33,7 @@ public interface NoRECGenerator<S extends Select<J, E, T, C>, J extends Join<E, 
      *
      * @return a query string to be executed
      */
-    String generateOptimizedQueryString(S select, E whereCondition, boolean shouldUseAggregate);
+    default String generateOptimizedQueryString(S select, E whereCondition, boolean shouldUseAggregate){return "";};
 
     /**
      * Generates a query string that is unlikely to be optimized by the DBMS.
@@ -45,5 +45,5 @@ public interface NoRECGenerator<S extends Select<J, E, T, C>, J extends Join<E, 
      *
      * @return a query string to be executed
      */
-    String generateUnoptimizedQueryString(S select, E whereCondition);
+    default String generateUnoptimizedQueryString(S select, E whereCondition){return "";};
 }

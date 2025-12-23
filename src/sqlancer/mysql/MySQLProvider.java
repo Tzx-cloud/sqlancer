@@ -4,33 +4,20 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import com.google.auto.service.AutoService;
 
-import sqlancer.AbstractAction;
-import sqlancer.DatabaseProvider;
-import sqlancer.IgnoreMeException;
-import sqlancer.MainOptions;
-import sqlancer.Randomly;
-import sqlancer.SQLConnection;
-import sqlancer.SQLProviderAdapter;
-import sqlancer.StatementExecutor;
+import sqlancer.*;
 import sqlancer.common.DBMSCommon;
 import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.common.query.SQLQueryProvider;
 import sqlancer.mysql.MySQLSchema.MySQLColumn;
 import sqlancer.mysql.MySQLSchema.MySQLTable;
-import sqlancer.mysql.gen.MySQLAlterTable;
-import sqlancer.mysql.gen.MySQLDeleteGenerator;
-import sqlancer.mysql.gen.MySQLDropIndex;
-import sqlancer.mysql.gen.MySQLInsertGenerator;
-import sqlancer.mysql.gen.MySQLSetGenerator;
-import sqlancer.mysql.gen.MySQLTableGenerator;
-import sqlancer.mysql.gen.MySQLTruncateTableGenerator;
-import sqlancer.mysql.gen.MySQLUpdateGenerator;
+import sqlancer.mysql.gen.*;
 import sqlancer.mysql.gen.admin.MySQLFlush;
 import sqlancer.mysql.gen.admin.MySQLReset;
 import sqlancer.mysql.gen.datadef.MySQLIndexGenerator;
@@ -50,7 +37,7 @@ public class MySQLProvider extends SQLProviderAdapter<MySQLGlobalState, MySQLOpt
     enum Action implements AbstractAction<MySQLGlobalState> {
         SHOW_TABLES((g) -> new SQLQueryAdapter("SHOW TABLES")), //
         INSERT(MySQLInsertGenerator::insertRow), //
-        SET_VARIABLE(MySQLSetGenerator::set), //
+        //SET_VARIABLE(MySQLSetGenerator::set), //
         REPAIR(MySQLRepair::repair), //
         OPTIMIZE(MySQLOptimize::optimize), //
         CHECKSUM(MySQLChecksum::checksum), //
@@ -94,9 +81,9 @@ public class MySQLProvider extends SQLProviderAdapter<MySQLGlobalState, MySQLOpt
         case REPAIR:
             nrPerformed = r.getInteger(0, 1);
             break;
-        case SET_VARIABLE:
-            nrPerformed = r.getInteger(0, 5);
-            break;
+//        case SET_VARIABLE:
+//            nrPerformed = r.getInteger(0, 5);
+//            break;
         case CREATE_INDEX:
             nrPerformed = r.getInteger(0, 5);
             break;
@@ -137,6 +124,14 @@ public class MySQLProvider extends SQLProviderAdapter<MySQLGlobalState, MySQLOpt
         return nrPerformed;
     }
 
+
+    @Override
+    public Class<? extends ExpressionAction> getActionClass() {
+        // 确保 MySQLExpressionGenerator.Actions 是 public 的
+        return MySQLExpressionGenerator.Actions.class;
+    }
+
+
     @Override
     public void generateDatabase(MySQLGlobalState globalState) throws Exception {
         while (globalState.getSchema().getDatabaseTables().size() < Randomly.getNotCachedInteger(1, 2)) {
@@ -170,6 +165,29 @@ public class MySQLProvider extends SQLProviderAdapter<MySQLGlobalState, MySQLOpt
             }
         }
     }
+
+    @Override
+    public void generateConfiguration(MySQLGlobalState globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception {
+        boolean success;
+        int nrTries = 0;
+        do {
+            SQLQueryAdapter config = globalState.getConfigurationGenerator().generateConfigForParameter(action);
+            success =  globalState.executeStatement( config);
+            System.out.println(config.getQueryString());
+        } while (!success && nrTries++ < 100);
+    }
+
+    @Override
+    public void generateDefaultConfiguration(MySQLGlobalState globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception {
+        boolean success;
+        int nrTries = 0;
+        do {
+            SQLQueryAdapter config = globalState.getConfigurationGenerator().generateDefaultConfigForParameter(action);
+            success =  globalState.executeStatement( config);
+            System.out.println(config.getQueryString());
+        } while (!success && nrTries++ < 100);
+    }
+
 
     @Override
     public SQLConnection createDatabase(MySQLGlobalState globalState) throws SQLException {

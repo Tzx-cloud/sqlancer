@@ -1,5 +1,7 @@
 package sqlancer.common.gen;
 
+import sqlancer.Randomly;
+
 public interface ExpressionGenerator<E> {
 
     /**
@@ -28,5 +30,6 @@ public interface ExpressionGenerator<E> {
      * @return an expression that checks whether the expression evaluates to NULL.
      */
     E isNull(E expr);
+
 
 }

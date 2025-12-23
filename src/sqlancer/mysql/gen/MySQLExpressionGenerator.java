@@ -1,19 +1,28 @@
 package sqlancer.mysql.gen;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import sqlancer.ExpressionAction;
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
 import sqlancer.common.gen.CERTGenerator;
+import sqlancer.common.gen.NoRECGenerator;
 import sqlancer.common.gen.TLPWhereGenerator;
 import sqlancer.common.gen.UntypedExpressionGenerator;
 import sqlancer.common.schema.AbstractTables;
+import sqlancer.mariadb.MariaDBSchema;
+import sqlancer.mariadb.ast.MariaDBAggregate;
+import sqlancer.mariadb.ast.MariaDBColumnName;
+import sqlancer.mariadb.ast.MariaDBExpression;
+import sqlancer.mariadb.ast.MariaDBSelectStatement;
 import sqlancer.mysql.MySQLBugs;
 import sqlancer.mysql.MySQLGlobalState;
+import sqlancer.mysql.MySQLSchema;
 import sqlancer.mysql.MySQLSchema.MySQLColumn;
 import sqlancer.mysql.MySQLSchema.MySQLRowValue;
 import sqlancer.mysql.MySQLSchema.MySQLTable;
@@ -46,9 +55,12 @@ import sqlancer.mysql.ast.MySQLUnaryPostfixOperation;
 import sqlancer.mysql.ast.MySQLUnaryPrefixOperation;
 import sqlancer.mysql.ast.MySQLUnaryPrefixOperation.MySQLUnaryPrefixOperator;
 
+import static sqlancer.ParameteraAwareGenerator.featureSet;
+
+
 public class MySQLExpressionGenerator extends UntypedExpressionGenerator<MySQLExpression, MySQLColumn>
         implements TLPWhereGenerator<MySQLSelect, MySQLJoin, MySQLExpression, MySQLTable, MySQLColumn>,
-        CERTGenerator<MySQLSelect, MySQLJoin, MySQLExpression, MySQLTable, MySQLColumn> {
+        CERTGenerator<MySQLSelect, MySQLJoin, MySQLExpression, MySQLTable, MySQLColumn>, NoRECGenerator<MySQLSelect, MySQLJoin, MySQLExpression, MySQLTable, MySQLColumn> {
 
     private final MySQLGlobalState state;
     private MySQLRowValue rowVal;
@@ -63,10 +75,11 @@ public class MySQLExpressionGenerator extends UntypedExpressionGenerator<MySQLEx
         return this;
     }
 
-    private enum Actions {
-        COLUMN, LITERAL, UNARY_PREFIX_OPERATION, UNARY_POSTFIX, COMPUTABLE_FUNCTION, BINARY_LOGICAL_OPERATOR,
+    public enum Actions implements ExpressionAction {
+       UNARY_PREFIX_OPERATION, UNARY_POSTFIX, COMPUTABLE_FUNCTION, BINARY_LOGICAL_OPERATOR,
         BINARY_COMPARISON_OPERATION, CAST, IN_OPERATION, BINARY_OPERATION, EXISTS, BETWEEN_OPERATOR, CASE_OPERATOR;
     }
+
 
     @Override
     public MySQLExpression generateExpression(int depth) {
@@ -74,29 +87,32 @@ public class MySQLExpressionGenerator extends UntypedExpressionGenerator<MySQLEx
             return generateLeafNode();
         }
         switch (Randomly.fromOptions(Actions.values())) {
-        case COLUMN:
-            return generateColumn();
-        case LITERAL:
-            return generateConstant();
         case UNARY_PREFIX_OPERATION:
+            featureSet.add(Actions.UNARY_PREFIX_OPERATION);
             MySQLExpression subExpr = generateExpression(depth + 1);
             MySQLUnaryPrefixOperator random = MySQLUnaryPrefixOperator.getRandom();
             return new MySQLUnaryPrefixOperation(subExpr, random);
         case UNARY_POSTFIX:
+            featureSet.add(Actions.UNARY_POSTFIX);
             return new MySQLUnaryPostfixOperation(generateExpression(depth + 1),
                     Randomly.fromOptions(MySQLUnaryPostfixOperation.UnaryPostfixOperator.values()),
                     Randomly.getBoolean());
         case COMPUTABLE_FUNCTION:
+            featureSet.add(Actions.COMPUTABLE_FUNCTION);
             return getComputableFunction(depth + 1);
         case BINARY_LOGICAL_OPERATOR:
+            featureSet.add(Actions.BINARY_LOGICAL_OPERATOR);
             return new MySQLBinaryLogicalOperation(generateExpression(depth + 1), generateExpression(depth + 1),
                     MySQLBinaryLogicalOperator.getRandom());
         case BINARY_COMPARISON_OPERATION:
+            featureSet.add(Actions.BINARY_COMPARISON_OPERATION);
             return new MySQLBinaryComparisonOperation(generateExpression(depth + 1), generateExpression(depth + 1),
                     BinaryComparisonOperator.getRandom());
         case CAST:
+            featureSet.add(Actions.CAST);
             return new MySQLCastOperation(generateExpression(depth + 1), MySQLCastOperation.CastType.getRandom());
         case IN_OPERATION:
+            featureSet.add(Actions.IN_OPERATION);
             MySQLExpression expr = generateExpression(depth + 1);
             List<MySQLExpression> rightList = new ArrayList<>();
             for (int i = 0; i < 1 + Randomly.smallNumber(); i++) {
@@ -104,14 +120,17 @@ public class MySQLExpressionGenerator extends UntypedExpressionGenerator<MySQLEx
             }
             return new MySQLInOperation(expr, rightList, Randomly.getBoolean());
         case BINARY_OPERATION:
+            featureSet.add(Actions.BINARY_OPERATION);
             if (MySQLBugs.bug99135) {
                 throw new IgnoreMeException();
             }
             return new MySQLBinaryOperation(generateExpression(depth + 1), generateExpression(depth + 1),
                     MySQLBinaryOperator.getRandom());
         case EXISTS:
+            featureSet.add(Actions.EXISTS);
             return getExists();
         case BETWEEN_OPERATOR:
+            featureSet.add(Actions.BETWEEN_OPERATOR);
             if (MySQLBugs.bug99181) {
                 // TODO: there are a number of bugs that are triggered by the BETWEEN operator
                 throw new IgnoreMeException();
@@ -119,6 +138,7 @@ public class MySQLExpressionGenerator extends UntypedExpressionGenerator<MySQLEx
             return new MySQLBetweenOperation(generateExpression(depth + 1), generateExpression(depth + 1),
                     generateExpression(depth + 1));
         case CASE_OPERATOR:
+            featureSet.add(Actions.CASE_OPERATOR);
             int nr = Randomly.smallNumber() + 1;
             return new MySQLCaseOperator(generateExpression(depth + 1), generateExpressions(nr, depth + 1),
                     generateExpressions(nr, depth + 1), generateExpression(depth + 1));
@@ -193,6 +213,9 @@ public class MySQLExpressionGenerator extends UntypedExpressionGenerator<MySQLEx
         return MySQLColumnReference.create(c, val);
     }
 
+
+
+
     @Override
     public MySQLExpression negatePredicate(MySQLExpression predicate) {
         return new MySQLUnaryPrefixOperation(predicate, MySQLUnaryPrefixOperator.NOT);
@@ -250,6 +273,7 @@ public class MySQLExpressionGenerator extends UntypedExpressionGenerator<MySQLEx
     public List<MySQLExpression> generateFetchColumns(boolean shouldCreateDummy) {
         return columns.stream().map(c -> new MySQLColumnReference(c, null)).collect(Collectors.toList());
     }
+
 
     @Override
     public String generateExplainQuery(MySQLSelect select) {

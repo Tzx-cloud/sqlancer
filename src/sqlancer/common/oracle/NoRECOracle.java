@@ -1,16 +1,16 @@
 package sqlancer.common.oracle;
 
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import sqlancer.IgnoreMeException;
-import sqlancer.Randomly;
-import sqlancer.Reproducer;
-import sqlancer.SQLGlobalState;
-import sqlancer.common.ast.newast.Expression;
-import sqlancer.common.ast.newast.Join;
-import sqlancer.common.ast.newast.Select;
+import sqlancer.*;
+import sqlancer.common.ast.newast.*;
+import sqlancer.common.gen.ExpressionGenerator;
 import sqlancer.common.gen.NoRECGenerator;
 import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.SQLQueryAdapter;
@@ -55,6 +55,8 @@ public class NoRECOracle<Z extends Select<J, E, T, C>, J extends Join<E, T, C>, 
         this.errors = expectedErrors;
         this.reproducer = null;
     }
+
+
 
     @Override
     public void check() throws SQLException {
@@ -110,10 +112,15 @@ public class NoRECOracle<Z extends Select<J, E, T, C>, J extends Join<E, T, C>, 
         }
     }
 
+
+
+
     @Override
     public String getLastQueryString() {
         return lastQueryString;
     }
+
+
 
     @Override
     public Reproducer<G> getLastReproducer() {
