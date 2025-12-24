@@ -49,6 +49,7 @@ import sqlancer.tidb.TiDBProvider;
 import sqlancer.yugabyte.ycql.YCQLProvider;
 import sqlancer.yugabyte.ysql.YSQLProvider;
 
+import static java.lang.Thread.activeCount;
 import static java.lang.Thread.sleep;
 
 public final class Main {
@@ -455,7 +456,7 @@ public final class Main {
             BaseConfigurationGenerator configGenerator = GeneralConfigurationGenerator
                     .createGenerator(state.getDbmsSpecificOptions().getClass(),state);
             state.setConfigurationGenerator(configGenerator);
-
+            configGenerator.loadWeightsFromFile(configGenerator.getDatabaseType()+"_config_weights.txt");
             for (BaseConfigurationGenerator.ConfigurationAction action :configGenerator.getAllActions()) {
                 try (C con = provider.createDatabase(state)) {
                     QueryManager<C> manager = new QueryManager<>(state);
@@ -473,6 +474,7 @@ public final class Main {
 //            configGenerator.calculateParameterWeights();
         }
 
+        //Tang:
         public void runConfigurationTesting() throws Exception {
             G state = createGlobalState();
             stateToRepro = provider.getStateToReproduce(databaseName);
@@ -486,25 +488,40 @@ public final class Main {
             state.setStateLogger(logger);
 
             BaseConfigurationGenerator configGenerator = GeneralConfigurationGenerator
-                    .createGenerator(state.getDbmsSpecificOptions().getClass(),state);
+                    .createGenerator(state.getDbmsSpecificOptions().getClass(), state);
             state.setConfigurationGenerator(configGenerator);
+            int testCount=0;
+            while (testCount<1000000) {
+                if(testCount%1000==0) {
+                    configGenerator.topKSnapshot(1000);
+                }
 
-            List<BaseConfigurationGenerator.ConfigurationAction> configurationActions = configGenerator.generateActions();
+                List<BaseConfigurationGenerator.ConfigurationAction> configurationActions = configGenerator.generateActions();
 
-            try (C con = provider.createDatabase(state)) {
+                try (C con = provider.createDatabase(state)) {
                     QueryManager<C> manager = new QueryManager<>(state);
                     state.setManager(manager);
                     state.setConnection(con);
                     if (options.logEachSelect()) {
                         logger.writeCurrent(state.getState());
                     }
-//                    state.getAflMonitor().clearCoverage();
+                    AFLMonitor.getInstance().refreshBuffer();
                     provider.generateDatabaseWithConfigurationTest(state, configurationActions);
-//                    AFLMonitor.getInstance().refreshBuffer();
-//                    byte[] coverageBuf = AFLMonitor.getInstance().getCoverageBuf();
+                    AFLMonitor.getInstance().updateComWeight(configurationActions);
+                    testCount++;
+
+                }catch (Exception e) {
+                    throw new AssertionError("Found a potential bug, please check reducer log for detail.");
                 }
-//            configGenerator.calculateParameterWeights();
+            }
+            try {
+                logger.getReduceFileWriter().close();
+                logger.reduceFileWriter = null;
+            } catch (IOException e) {
+                throw new AssertionError(e);
+            }
         }
+
 
         //TODO: Tang: run()函数是整个程序的入口
         public void run() throws Exception {
@@ -524,7 +541,7 @@ public final class Main {
                 try {
                     stateToRepro.databaseVersion = con.getDatabaseVersion();
                 } catch (Exception e) {
-                    // ignore
+
                 }
                 state.setConnection(con);
                 state.setStateLogger(logger);

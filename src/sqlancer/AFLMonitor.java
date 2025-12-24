@@ -5,12 +5,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Thread.sleep;
+import static sqlancer.BaseConfigurationGenerator.allParameterCombos;
 
 public class AFLMonitor implements AutoCloseable {
     // 常量
@@ -21,7 +20,7 @@ public class AFLMonitor implements AutoCloseable {
     private static final int IPC_PRIVATE = 0;
     private static final int IPC_CREAT = 01000;
     private static final int IPC_RMID = 0;
-
+    private final double alpha = 0.4; // 用于权重更新的学习率
 
 
     // JNA 接口
@@ -149,6 +148,33 @@ public class AFLMonitor implements AutoCloseable {
     public void refreshBuffer() {
         if (shmPtr == null) return;
         shmPtr.read(0, coverageBuf, 0, AFL_MAP_SIZE);
+    }
+
+    public double getCoverageRate(){
+        refreshBuffer();
+        int hitEdges = 0;
+        for (int i = 0; i < AFL_MAP_SIZE; i++) {
+            int v = coverageBuf[i] & 0xFF;
+            if (v > 0) {
+                hitEdges++;
+            }
+        }
+        return (double) hitEdges/AFL_MAP_SIZE;
+    }
+
+    public void updateComWeight(List<BaseConfigurationGenerator.ConfigurationAction> actions){
+        byte[] oldCoverageBuf = coverageBuf.clone();
+        refreshBuffer();
+        int newEdges=0;
+        for (int i = 0; i < AFLMonitor.AFL_MAP_SIZE; i++) {
+            // 如果一个位置在执行前是0，而执行后非0，说明这是一条新发现的边
+            if (oldCoverageBuf[i] == 0 && coverageBuf[i] != 0) {
+                newEdges++;
+            }
+        }
+        Double weight=allParameterCombos.get(Set.of(actions));
+        weight*= (1.0 +alpha*newEdges/(1000.0+1.0));
+        allParameterCombos.replace(Set.of((BaseConfigurationGenerator.ConfigurationAction) actions),weight);
     }
 
     public void showCoverageReport() {

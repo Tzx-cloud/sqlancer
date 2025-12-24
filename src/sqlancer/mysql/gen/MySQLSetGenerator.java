@@ -40,7 +40,7 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
     }
 
     @Override
-    public ConfigurationAction[] getAllActions() {
+    public  ConfigurationAction[] getAllActions() {
         return MySQLSetGenerator.Action.values();
     }
 

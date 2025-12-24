@@ -53,10 +53,11 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     @Override
     //Tang: 生成配置参数并进行测试
     public void generateDatabaseWithConfigurationTest(G globalState, List<BaseConfigurationGenerator.ConfigurationAction> actions) throws Exception{
-        //Tang: 生成配置参数并进行训练
+
         ParameteraAwareGenerator parameterAwareGenerator = new ParameteraAwareGenerator(getActionClass());
         List<? extends OracleFactory<G>> testOracleFactory = globalState.getDbmsSpecificOptions()
                 .getTestOracleFactory();
+        parameterAwareGenerator.chooseFeature(actions);
         try {
             for (int i = 0; i < BaseConfigurationGenerator.TRAINING_SAMPLES; i++) {
                 generateConfiguration(globalState, actions.get(0));
@@ -70,10 +71,7 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
                         assert localState != null;
                         try {
                             globalState.getManager().incrementSelectQueryCount();
-                            AFLMonitor.getInstance().clearCoverage();
                             testOracle.check();
-                            AFLMonitor.getInstance().refreshBuffer();
-                            parameterAwareGenerator.updateCounts();
 
                             Main.nrSuccessfulActions.addAndGet(1);
                         } catch (IgnoreMeException ignored) {

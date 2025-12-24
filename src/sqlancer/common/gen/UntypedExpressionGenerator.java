@@ -3,6 +3,8 @@ package sqlancer.common.gen;
 import java.util.ArrayList;
 import java.util.List;
 
+import sqlancer.BaseConfigurationGenerator;
+import sqlancer.ExpressionAction;
 import sqlancer.Randomly;
 
 public abstract class UntypedExpressionGenerator<E, C> implements ExpressionGenerator<E> {

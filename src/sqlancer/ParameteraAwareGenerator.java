@@ -1,9 +1,13 @@
 package sqlancer;
 
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 
 import static sqlancer.AFLMonitor.coverageBuf;
+import static sqlancer.BaseConfigurationGenerator.allParameterCombos;
+import static sqlancer.BaseConfigurationGenerator.parameterFeatureProbabilities;
 
 /**
  * Implements Parameter-Aware Test Case Synthesis.
@@ -31,6 +35,7 @@ public class ParameteraAwareGenerator {
     private final int[][] featureEdgeCounts;
     // Map<Edge, Integer>
     private final long[] totalEdgeHitCounts = new long[AFLMonitor.AFL_MAP_SIZE];
+    public static double[] comActionProbabilities;
 //    // Map<ParameterConfig, Integer>
 //    private final Map<String, double[]> totalSamplesPerConfig = new HashMap<>();
 
@@ -46,6 +51,7 @@ public class ParameteraAwareGenerator {
         int numActions = this.actions.length;
         this.featureCounts = new int[numActions];
         this.featureEdgeCounts = new int[numActions][AFLMonitor.AFL_MAP_SIZE];
+        comActionProbabilities = new double[numActions];
     }
     /**
      * Calculates the novelty score for an edge.
@@ -56,6 +62,8 @@ public class ParameteraAwareGenerator {
         long hitCount = totalEdgeHitCounts[edge];
         return 1.0 / Math.sqrt(1.0 + hitCount);
     }
+
+
 
     /**
      * Calculates the mutual information between a feature and an edge for a given parameter configuration.
@@ -111,7 +119,7 @@ public class ParameteraAwareGenerator {
      * Calculates the weights for all features under the current parameter configuration.
      * @return A map from GeneratorNode to its calculated weight.
      */
-    public double[] getFeatureWeights() {
+    private double[] getFeatureWeights() {
         double[] weights = new double[featureCounts.length];
 
         // 优化：交换内外循环，外层遍历边，内层遍历特征
@@ -138,7 +146,7 @@ public class ParameteraAwareGenerator {
      * Calculates the generation probabilities for all features based on their weights.
      * @return A map from GeneratorNode to its generation probability.
      */
-    public double[] getFeatureProbabilities() {
+    public double[]getFeatureProbabilities() {
         double[] weights = getFeatureWeights();
         double[] probabilities = new double[weights.length];
         double totalWeightPowered = 0.0;
@@ -190,22 +198,24 @@ public class ParameteraAwareGenerator {
         }
     }
 
-    /**
-     * Selects a random feature based on the calculated probabilities.
-     * @return A randomly selected GeneratorNode.
-     */
-//    public GeneratorNode getRandomFeatureByProbability() {
-//        Map<GeneratorNode, Double> probabilities = getFeatureProbabilities();
-//        double rand = Randomly.getPercentage();
-//        double cumulativeProbability = 0.0;
-//
-//        for (Map.Entry<GeneratorNode, Double> entry : probabilities.entrySet()) {
-//            cumulativeProbability += entry.getValue();
-//            if (rand < cumulativeProbability) {
-//                return entry.getKey();
-//            }
-//        }
-//        // Fallback in case of rounding errors
-//        return Randomly.fromOptions(GeneratorNode.values());
-//    }
+    public void chooseFeature(List<BaseConfigurationGenerator.ConfigurationAction> configurationActions) {
+
+        if (Randomly.getBooleanWithSmallProbability()) {
+            // 随机选择特性
+            for (int i = 0; i < actions.length; i++) {
+                comActionProbabilities[i] = 1.0 / actions.length;
+            }
+        }else {
+            computeComProbabilities(configurationActions);
+        }
+
+    }
+
+    private void computeComProbabilities(List<BaseConfigurationGenerator.ConfigurationAction> configurationActions ) {
+        double[] pro1 = parameterFeatureProbabilities.get(configurationActions.get(0));
+        double[] pro2 = parameterFeatureProbabilities.get(configurationActions.get(1));
+        for (int i = 0; i < actions.length; i++) {
+            comActionProbabilities[i] = (pro1[i] + pro2[i])/2;
+        }
+    }
 }
