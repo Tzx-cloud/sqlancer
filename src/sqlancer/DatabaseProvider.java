@@ -2,6 +2,8 @@ package sqlancer;
 
 import sqlancer.common.log.LoggableFactory;
 
+import java.util.List;
+
 public interface DatabaseProvider<G extends GlobalState<O, ?, C>, O extends DBMSSpecificOptions<?>, C extends SQLancerDBConnection> {
 
     /**
@@ -58,4 +60,5 @@ public interface DatabaseProvider<G extends GlobalState<O, ?, C>, O extends DBMS
     StateToReproduce getStateToReproduce(String databaseName);
 
     void generateDatabaseWithConfigurationTraining(G globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception;
+    void generateDatabaseWithConfigurationTest(G globalState, List<BaseConfigurationGenerator.ConfigurationAction> actions) throws Exception;
 }

@@ -98,7 +98,7 @@ public class AFLMonitor implements AutoCloseable {
     }
 
     public boolean createSharedMemory() {
-        shmId = CLib.INSTANCE.shmget(IPC_PRIVATE, AFL_MAP_SIZE, IPC_CREAT | 0600);
+        shmId = CLib.INSTANCE.shmget(IPC_PRIVATE, AFL_MAP_SIZE, IPC_CREAT | 0777);
         if (shmId < 0) {
             System.err.println("创建共享内存失败");
             return false;

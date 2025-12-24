@@ -49,6 +49,50 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     }
 
     public Class<? extends ExpressionAction> getActionClass(){return ExpressionAction.class;}
+
+    @Override
+    //Tang: 生成配置参数并进行测试
+    public void generateDatabaseWithConfigurationTest(G globalState, List<BaseConfigurationGenerator.ConfigurationAction> actions) throws Exception{
+        //Tang: 生成配置参数并进行训练
+        ParameteraAwareGenerator parameterAwareGenerator = new ParameteraAwareGenerator(getActionClass());
+        List<? extends OracleFactory<G>> testOracleFactory = globalState.getDbmsSpecificOptions()
+                .getTestOracleFactory();
+        try {
+            for (int i = 0; i < BaseConfigurationGenerator.TRAINING_SAMPLES; i++) {
+                generateConfiguration(globalState, actions.get(0));
+                generateConfiguration(globalState, actions.get(1));
+                generateDatabase(globalState);
+                checkViewsAreValid(globalState);
+                globalState.getManager().incrementCreateDatabase();
+                TestOracle<G> testOracle = testOracleFactory.get(0).create(globalState);
+                for (int j = 0; j <10000; j++) {
+                    try (OracleRunReproductionState localState = globalState.getState().createLocalState()) {
+                        assert localState != null;
+                        try {
+                            globalState.getManager().incrementSelectQueryCount();
+                            AFLMonitor.getInstance().clearCoverage();
+                            testOracle.check();
+                            AFLMonitor.getInstance().refreshBuffer();
+                            parameterAwareGenerator.updateCounts();
+
+                            Main.nrSuccessfulActions.addAndGet(1);
+                        } catch (IgnoreMeException ignored) {
+                        } catch (AssertionError e) {
+                            e.printStackTrace();
+                            throw e;
+                        }
+                        localState.executedWithoutError();
+                    }
+                }
+            }
+            generateDefaultConfiguration(globalState, actions.get(0));
+            generateDefaultConfiguration(globalState, actions.get(1));
+        }finally {
+            globalState.setSchema(null);
+            globalState.getConnection().close();
+        }
+    }
+
     @Override
     public void generateDatabaseWithConfigurationTraining(G globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception{
         //Tang: 生成配置参数并进行训练
@@ -86,7 +130,7 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
             generateDefaultConfiguration(globalState, action);
         }finally {
             double[] featureProbabilities = parameterAwareGenerator.getFeatureProbabilities();
-            BaseConfigurationGenerator.parameterFeatureProbabilities.putIfAbsent(action.getName(), featureProbabilities.clone());
+            BaseConfigurationGenerator.parameterFeatureProbabilities.putIfAbsent(action, featureProbabilities.clone());
             globalState.setSchema(null);
             globalState.getConnection().close();
         }

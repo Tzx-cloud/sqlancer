@@ -473,6 +473,39 @@ public final class Main {
 //            configGenerator.calculateParameterWeights();
         }
 
+        public void runConfigurationTesting() throws Exception {
+            G state = createGlobalState();
+            stateToRepro = provider.getStateToReproduce(databaseName);
+            stateToRepro.seedValue = r.getSeed();
+            state.setState(stateToRepro);
+            logger = new StateLogger(databaseName, provider, options);
+            state.setRandomly(r);
+            state.setDatabaseName(databaseName);
+            state.setMainOptions(options);
+            state.setDbmsSpecificOptions(command);
+            state.setStateLogger(logger);
+
+            BaseConfigurationGenerator configGenerator = GeneralConfigurationGenerator
+                    .createGenerator(state.getDbmsSpecificOptions().getClass(),state);
+            state.setConfigurationGenerator(configGenerator);
+
+            List<BaseConfigurationGenerator.ConfigurationAction> configurationActions = configGenerator.generateActions();
+
+            try (C con = provider.createDatabase(state)) {
+                    QueryManager<C> manager = new QueryManager<>(state);
+                    state.setManager(manager);
+                    state.setConnection(con);
+                    if (options.logEachSelect()) {
+                        logger.writeCurrent(state.getState());
+                    }
+//                    state.getAflMonitor().clearCoverage();
+                    provider.generateDatabaseWithConfigurationTest(state, configurationActions);
+//                    AFLMonitor.getInstance().refreshBuffer();
+//                    byte[] coverageBuf = AFLMonitor.getInstance().getCoverageBuf();
+                }
+//            configGenerator.calculateParameterWeights();
+        }
+
         //TODO: Tang: run()函数是整个程序的入口
         public void run() throws Exception {
             G state = createGlobalState();
