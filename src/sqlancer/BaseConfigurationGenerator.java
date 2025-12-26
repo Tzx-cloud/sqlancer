@@ -20,7 +20,7 @@ public abstract class BaseConfigurationGenerator  {
     public static boolean isTrainingPhase = false;
     public static final int TRAINING_SAMPLES = 1;
     private double weightSum = 0.0;
-
+    public static List<ConfigurationAction> currentGeneratedActions = new ArrayList<>();
 
     public abstract ConfigurationAction[] getAllActions();
     public  ConfigurationAction getActionByName(String name) {
@@ -65,7 +65,7 @@ public abstract class BaseConfigurationGenerator  {
      * @param filePath 权重文件的路径
      * @throws IOException 如果文件读取失败
      */
-    public void loadParameterFeatureProbabilitiesFromFile(String filePath) throws IOException {
+    public boolean loadParameterFeatureProbabilitiesFromFile(String filePath) throws IOException {
         // 加载前清空当前的 Map
         parameterFeatureProbabilities.clear();
 
@@ -109,8 +109,24 @@ public abstract class BaseConfigurationGenerator  {
                     System.err.println("警告: 处理行时发生未知错误，将被忽略: " + line + " - " + e.getMessage());
                 }
             }
+        }catch(FileNotFoundException e){
+            System.err.println("警告: 未找到文件 '" + filePath + "'，无法加载参数特性概率。");
+            return false;
+        }
+        if(parameterFeatureProbabilities.isEmpty()) {
+            return false;
+        }
+
+        if(parameterFeatureProbabilities.values().iterator().next().length != getAllActions().length) {
+
+        }
+        if (parameterFeatureProbabilities.size() != getAllActions().length) {
+            System.err.println("错误: 加载的参数数量与当前数量不匹配。");
+            parameterFeatureProbabilities.clear();
+            return false;
         }
         System.out.println("成功从 '" + filePath + "' 加载了 " + parameterFeatureProbabilities.size() + " 个参数特性概率。");
+        return true;
     }
 
     /**
@@ -172,6 +188,8 @@ public abstract class BaseConfigurationGenerator  {
                     System.err.println("警告: 处理行时发生未知错误，将被忽略: " + line + " - " + e.getMessage());
                 }
             }
+        }catch(FileNotFoundException e){
+            System.err.println("警告: 未找到文件 '" + filePath + "'，无法加载参数特性概率。");
         }
         System.out.println("成功从 '" + filePath + "' 加载了 " + allParameterCombos.size() + " 个参数组合权重。");
     }
@@ -328,10 +346,11 @@ public abstract class BaseConfigurationGenerator  {
             while (proParameterCombos.containsKey(randomActionSet)) {
                 randomActionSet = Randomly.fromOptions(allParameterCombos.keySet().toArray(new Set[0]));
             }
-            return new ArrayList<>(randomActionSet);
+            currentGeneratedActions= new ArrayList<>(randomActionSet);
         } else {
-            return selectActionsByWeight();
+            currentGeneratedActions= selectActionsByWeight();
         }
+        return currentGeneratedActions;
     }
     public void topKSnapshot(int k) {
         // 最小堆：堆顶是当前 Top-K 里最小的那个

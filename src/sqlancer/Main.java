@@ -60,6 +60,7 @@ public final class Main {
     public static volatile AtomicLong nrSuccessfulActions = new AtomicLong();
     public static volatile AtomicLong nrUnsuccessfulActions = new AtomicLong();
     public static volatile AtomicLong threadsShutdown = new AtomicLong();
+    public static volatile AtomicLong throughout = new AtomicLong();
     static boolean progressMonitorStarted;
 
     static {
@@ -455,8 +456,12 @@ public final class Main {
 
             BaseConfigurationGenerator configGenerator = GeneralConfigurationGenerator
                     .createGenerator(state.getDbmsSpecificOptions().getClass(),state);
+            if(configGenerator.loadParameterFeatureProbabilitiesFromFile(configGenerator.getDatabaseType()+"_parameter_weights.txt")) {
+                System.out.println("Successfully loaded parameter weights from file.");
+                return;
+            }
             state.setConfigurationGenerator(configGenerator);
-            configGenerator.loadWeightsFromFile(configGenerator.getDatabaseType()+"_config_weights.txt");
+
             for (BaseConfigurationGenerator.ConfigurationAction action :configGenerator.getAllActions()) {
                 try (C con = provider.createDatabase(state)) {
                     QueryManager<C> manager = new QueryManager<>(state);
@@ -471,6 +476,7 @@ public final class Main {
 //                    byte[] coverageBuf = AFLMonitor.getInstance().getCoverageBuf();
                 }
             }
+            configGenerator.saveParameterFeatureProbabilitiesToFile(configGenerator.getDatabaseType()+"_parameter_weights.txt");
 //            configGenerator.calculateParameterWeights();
         }
 
@@ -490,6 +496,7 @@ public final class Main {
             BaseConfigurationGenerator configGenerator = GeneralConfigurationGenerator
                     .createGenerator(state.getDbmsSpecificOptions().getClass(), state);
             state.setConfigurationGenerator(configGenerator);
+            configGenerator.loadWeightsFromFile(configGenerator.getDatabaseType()+"_config_weights.txt");
             int testCount=0;
             while (testCount<1000000) {
                 if(testCount%1000==0) {
@@ -861,6 +868,128 @@ public final class Main {
         return someOneFails.get() ? options.getErrorExitCode() : 0;
     }
 
+    //Tang: for web version
+    public static int executeMainOnWeb(String... args) throws AssertionError {
+        List<DatabaseProvider<?, ?, ?>> providers = getDBMSProviders();
+        Map<String, DBMSExecutorFactory<?, ?, ?>> nameToProvider = new HashMap<>();
+        MainOptions options = new MainOptions();
+        Builder commandBuilder = JCommander.newBuilder().addObject(options);
+        for (DatabaseProvider<?, ?, ?> provider : providers) {
+            String name = provider.getDBMSName();
+            DBMSExecutorFactory<?, ?, ?> executorFactory = new DBMSExecutorFactory<>(provider, options);
+            commandBuilder = commandBuilder.addCommand(name, executorFactory.getCommand());
+            nameToProvider.put(name, executorFactory);
+        }
+        JCommander jc = commandBuilder.programName("SQLancer").build();
+        jc.parse(args);
+
+        if (jc.getParsedCommand() == null || options.isHelp()) {
+            jc.usage();
+            return options.getErrorExitCode();
+        }
+        ExecutorService execService = Executors.newFixedThreadPool(options.getNumberConcurrentThreads());
+        DBMSExecutorFactory<?, ?, ?> executorFactory = nameToProvider.get(jc.getParsedCommand());
+
+        Randomly.initialize(options);
+        if (options.printProgressInformation()) {
+            startProgressMonitor();
+            if (options.printProgressSummary()) {
+                Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        try {
+                            execService.shutdownNow();
+                            execService.awaitTermination(3, TimeUnit.SECONDS);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        //Tang:close AFLMonitor
+                        try {
+                            AFLMonitor.getInstance().close();
+                            sleep(2000);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        System.out.println("Overall execution statistics");
+                        System.out.println("============================");
+                        System.out.println(formatInteger(nrQueries.get()) + " queries");
+                        System.out.println(formatInteger(nrDatabases.get()) + " databases");
+                        System.out.println(
+                                formatInteger(nrSuccessfulActions.get()) + " successfully-executed statements");
+                        System.out.println(
+                                formatInteger(nrUnsuccessfulActions.get()) + " unsuccessfully-executed statements");
+                    }
+
+                    private String formatInteger(long intValue) {
+                        if (intValue > 1000) {
+                            return String.format("%,9dk", intValue / 1000);
+                        } else {
+                            return String.format("%,10d", intValue);
+                        }
+                    }
+                }));
+            }
+        }
+
+//        ExecutorService execService = Executors.newFixedThreadPool(options.getNumberConcurrentThreads());
+//        DBMSExecutorFactory<?, ?, ?> executorFactory = nameToProvider.get(jc.getParsedCommand());
+
+        if (options.performConnectionTest()) {
+            try {
+                AFLMonitor.getInstance();
+                executorFactory.getDBMSExecutor(options.getDatabasePrefix() + "connectiontest", new Randomly())
+                        .testConnection();
+            } catch (Exception e) {
+                System.err.println(
+                        "SQLancer failed creating a test database, indicating that SQLancer might have failed connecting to the DBMS. In order to change the username, password, host and port, you can use the --username, --password, --host and --port options.\n\n");
+                e.printStackTrace();
+                return options.getErrorExitCode();
+            }
+        }
+        final AtomicBoolean someOneFails = new AtomicBoolean(false);
+
+        //Tang: 1.SQL优先级训练
+        DBMSExecutor<?, ?, ?> executor = executorFactory.getDBMSExecutor(options.getDatabasePrefix() + 0, new Randomly(System.currentTimeMillis()));
+        try {
+            BaseConfigurationGenerator.isTrainingPhase=false;
+            executor.runConfigurationTraining();
+
+        } catch (IgnoreMeException e) {
+
+        } catch (Throwable reduce) {
+            reduce.printStackTrace();
+            executor.getStateToReproduce().exception = reduce.getMessage();
+            executor.getLogger().logFileWriter = null;
+            executor.getLogger().logException(reduce, executor.getStateToReproduce());
+
+        } finally {
+            BaseConfigurationGenerator.isTrainingPhase=false;
+            try {
+                if (options.logEachSelect()) {
+                    if (executor.getLogger().currentFileWriter != null) {
+                        executor.getLogger().currentFileWriter.close();
+                    }
+                    executor.getLogger().currentFileWriter = null;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+        try {
+            if (options.getTimeoutSeconds() == -1) {
+                execService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+            } else {
+                execService.awaitTermination(options.getTimeoutSeconds(), TimeUnit.SECONDS);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        return someOneFails.get() ? options.getErrorExitCode() : 0;
+    }
     /**
      * To register a new provider, it is necessary to implement the DatabaseProvider interface and add an additional
      * configuration file, see https://docs.oracle.com/javase/9/docs/api/java/util/ServiceLoader.html. Currently, we use
@@ -936,7 +1065,7 @@ public final class Main {
                 long elapsedTimeMillis = System.currentTimeMillis() - timeMillis;
                 long currentNrQueries = nrQueries.get();
                 long nrCurrentQueries = currentNrQueries - lastNrQueries;
-                double throughput = nrCurrentQueries / (elapsedTimeMillis / 1000d);
+                throughout.set((long) (nrCurrentQueries / (elapsedTimeMillis / 1000d)));
                 long currentNrDbs = nrDatabases.get();
                 long nrCurrentDbs = currentNrDbs - lastNrDbs;
                 double throughputDbs = nrCurrentDbs / (elapsedTimeMillis / 1000d);
@@ -946,7 +1075,7 @@ public final class Main {
                 Date date = new Date();
                 System.out.println(String.format(
                         "[%s] Executed %d queries (%d queries/s; %.2f/s dbs, successful statements: %2d%%). Threads shut down: %d.",
-                        dateFormat.format(date), currentNrQueries, (int) throughput, throughputDbs,
+                        dateFormat.format(date), currentNrQueries,  throughout.get(), throughputDbs,
                         successfulStatementsRatio, threadsShutdown.get()));
                 timeMillis = System.currentTimeMillis();
                 lastNrQueries = currentNrQueries;

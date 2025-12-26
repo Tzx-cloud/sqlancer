@@ -1,14 +1,30 @@
 package sqlancer;
 
 import org.junit.jupiter.api.Test;
+import java.lang.Thread;
+
+import java.util.Map;
 
 public class TestMySQLFuzzing {
 
 
     @Test
-    public void testMySQLFuzzing() {
+    public void testMySQLFuzzing() throws InterruptedException {
         String[] args={"--use-reducer","mysql","--oracle","TLP_WHERE"};
-        Main.main(args);
+        //Main.main(args);
+        SqlancerRunner runner = new SqlancerRunner();
+
+        runner.startFuzzing(args);
+
+        while(true){
+            Thread.sleep(1000);
+            Map<String, Object> testStatus = runner.getTestStatus();
+
+        }
+
+
 
     }
+
+
 }

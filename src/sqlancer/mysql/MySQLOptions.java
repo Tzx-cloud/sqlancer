@@ -15,7 +15,7 @@ public class MySQLOptions implements DBMSSpecificOptions<MySQLOracleFactory> {
     public static final int DEFAULT_PORT = 3306;
 
     @Parameter(names = "--oracle")
-    public List<MySQLOracleFactory> oracles = Arrays.asList(MySQLOracleFactory.TLP_WHERE);
+    public List<MySQLOracleFactory> oracles = List.of(MySQLOracleFactory.TLP_WHERE);
 
     @Override
     public List<MySQLOracleFactory> getTestOracleFactory() {

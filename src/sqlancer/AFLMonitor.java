@@ -150,7 +150,7 @@ public class AFLMonitor implements AutoCloseable {
         shmPtr.read(0, coverageBuf, 0, AFL_MAP_SIZE);
     }
 
-    public double getCoverageRate(){
+    public  double getCoverageRate(){
         refreshBuffer();
         int hitEdges = 0;
         for (int i = 0; i < AFL_MAP_SIZE; i++) {

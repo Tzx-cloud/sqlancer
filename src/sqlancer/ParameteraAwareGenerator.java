@@ -36,6 +36,7 @@ public class ParameteraAwareGenerator {
     // Map<Edge, Integer>
     private final long[] totalEdgeHitCounts = new long[AFLMonitor.AFL_MAP_SIZE];
     public static double[] comActionProbabilities;
+
 //    // Map<ParameterConfig, Integer>
 //    private final Map<String, double[]> totalSamplesPerConfig = new HashMap<>();
 
