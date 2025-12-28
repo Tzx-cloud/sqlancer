@@ -51,6 +51,7 @@ import sqlancer.yugabyte.ysql.YSQLProvider;
 
 import static java.lang.Thread.activeCount;
 import static java.lang.Thread.sleep;
+import static sqlancer.BaseConfigurationGenerator.currentGeneratedActions;
 
 public final class Main {
 
@@ -61,8 +62,9 @@ public final class Main {
     public static volatile AtomicLong nrUnsuccessfulActions = new AtomicLong();
     public static volatile AtomicLong threadsShutdown = new AtomicLong();
     public static volatile AtomicLong throughout = new AtomicLong();
+    public static volatile AtomicLong bugs = new AtomicLong();
     static boolean progressMonitorStarted;
-
+    static BaseConfigurationGenerator configGenerator=null;
     static {
         System.setProperty(org.slf4j.simple.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
         if (!LOG_DIRECTORY.exists()) {
@@ -456,7 +458,7 @@ public final class Main {
 
             BaseConfigurationGenerator configGenerator = GeneralConfigurationGenerator
                     .createGenerator(state.getDbmsSpecificOptions().getClass(),state);
-            if(configGenerator.loadParameterFeatureProbabilitiesFromFile(configGenerator.getDatabaseType()+"_parameter_weights.txt")) {
+            if(configGenerator.loadParameterFeatureProbabilitiesFromFile(configGenerator.getDatabaseType())) {
                 System.out.println("Successfully loaded parameter weights from file.");
                 return;
             }
@@ -476,7 +478,7 @@ public final class Main {
 //                    byte[] coverageBuf = AFLMonitor.getInstance().getCoverageBuf();
                 }
             }
-            configGenerator.saveParameterFeatureProbabilitiesToFile(configGenerator.getDatabaseType()+"_parameter_weights.txt");
+            configGenerator.saveParameterFeatureProbabilitiesToFile(configGenerator.getDatabaseType());
 //            configGenerator.calculateParameterWeights();
         }
 
@@ -493,18 +495,20 @@ public final class Main {
             state.setDbmsSpecificOptions(command);
             state.setStateLogger(logger);
 
-            BaseConfigurationGenerator configGenerator = GeneralConfigurationGenerator
-                    .createGenerator(state.getDbmsSpecificOptions().getClass(), state);
+            if (configGenerator==null){
+                configGenerator = GeneralConfigurationGenerator
+                        .createGenerator(state.getDbmsSpecificOptions().getClass(), state);
+                configGenerator.loadWeightsFromFile(configGenerator.getDatabaseType());
+                configGenerator.loadParameterFeatureProbabilitiesFromFile(configGenerator.getDatabaseType());
+            }
+
             state.setConfigurationGenerator(configGenerator);
-            configGenerator.loadWeightsFromFile(configGenerator.getDatabaseType()+"_config_weights.txt");
             int testCount=0;
             while (testCount<1000000) {
                 if(testCount%1000==0) {
                     configGenerator.topKSnapshot(1000);
                 }
-
-                List<BaseConfigurationGenerator.ConfigurationAction> configurationActions = configGenerator.generateActions();
-
+                 configGenerator.generateActions();
                 try (C con = provider.createDatabase(state)) {
                     QueryManager<C> manager = new QueryManager<>(state);
                     state.setManager(manager);
@@ -512,18 +516,16 @@ public final class Main {
                     if (options.logEachSelect()) {
                         logger.writeCurrent(state.getState());
                     }
-                    AFLMonitor.getInstance().refreshBuffer();
-                    provider.generateDatabaseWithConfigurationTest(state, configurationActions);
-                    AFLMonitor.getInstance().updateComWeight(configurationActions);
+                    //AFLMonitor.getInstance().refreshBuffer();
+                    provider.generateDatabaseWithConfigurationTest(state, currentGeneratedActions);
+                    AFLMonitor.getInstance().updateComWeight(currentGeneratedActions);
                     testCount++;
 
-                }catch (Exception e) {
-                    throw new AssertionError("Found a potential bug, please check reducer log for detail.");
                 }
             }
             try {
-                logger.getReduceFileWriter().close();
-                logger.reduceFileWriter = null;
+                logger.getCurrentFileWriter().close();
+                logger.currentFileWriter = null;
             } catch (IOException e) {
                 throw new AssertionError(e);
             }
@@ -949,11 +951,54 @@ public final class Main {
         }
         final AtomicBoolean someOneFails = new AtomicBoolean(false);
 
-        //Tang: 1.SQL优先级训练
+        //Tang:
+        for (; bugs.intValue() < options.getTotalNumberTries(); bugs.addAndGet(1)) {
+            int i = bugs.intValue();
+            final String databaseName = options.getDatabasePrefix() + i;
+            final long seed;
+            if (options.getRandomSeed() == -1) {
+                seed = System.currentTimeMillis() + i;
+            } else {
+                seed = options.getRandomSeed() + i;
+            }
+            Randomly r = new Randomly(seed);
+
+
+                DBMSExecutor<?, ?, ?> executor = executorFactory.getDBMSExecutor(databaseName, r);
+                try {
+                    executor.runConfigurationTesting();
+                } catch (IgnoreMeException e) {
+                    continue;
+                } catch (Throwable reduce) {
+                    reduce.printStackTrace();
+                    executor.getStateToReproduce().exception = reduce.getMessage();
+                    executor.getLogger().logFileWriter = null;
+                    executor.getLogger().logException(reduce, executor.getStateToReproduce());
+                    if (options.serializeReproduceState()) {
+                        executor.getStateToReproduce().logStatement(reduce.getMessage()); // add the error statement
+                        executor.getStateToReproduce().serialize(executor.getLogger().getReproduceFilePath());
+                    }
+                } finally {
+                    try {
+                        if (options.logEachSelect()) {
+                            if (executor.getLogger().currentFileWriter != null) {
+                                executor.getLogger().currentFileWriter.close();
+                            }
+                            executor.getLogger().currentFileWriter = null;
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+
+        }
+
+
         DBMSExecutor<?, ?, ?> executor = executorFactory.getDBMSExecutor(options.getDatabasePrefix() + 0, new Randomly(System.currentTimeMillis()));
         try {
             BaseConfigurationGenerator.isTrainingPhase=false;
-            executor.runConfigurationTraining();
+            executor.runConfigurationTesting();
 
         } catch (IgnoreMeException e) {
 
@@ -964,7 +1009,7 @@ public final class Main {
             executor.getLogger().logException(reduce, executor.getStateToReproduce());
 
         } finally {
-            BaseConfigurationGenerator.isTrainingPhase=false;
+
             try {
                 if (options.logEachSelect()) {
                     if (executor.getLogger().currentFileWriter != null) {

@@ -172,9 +172,23 @@ public class AFLMonitor implements AutoCloseable {
                 newEdges++;
             }
         }
-        Double weight=allParameterCombos.get(Set.of(actions));
-        weight*= (1.0 +alpha*newEdges/(1000.0+1.0));
-        allParameterCombos.replace(Set.of((BaseConfigurationGenerator.ConfigurationAction) actions),weight);
+
+        // 1. 正确地从 List 创建 Set 作为键
+        Set<BaseConfigurationGenerator.ConfigurationAction> key = new HashSet<>(actions);
+
+        // 2. 使用这个键来获取 weight
+        Double weight = allParameterCombos.get(key);
+
+        // 3. 检查 weight 是否为 null，避免 NullPointerException
+        if (weight != null) {
+            weight *= (1.0 + alpha * newEdges / (10000.0 + 1.0));
+            // 4. 使用相同的键来更新 Map
+            allParameterCombos.replace(key, weight);
+        } else {
+            // (可选) 处理键不存在的情况，例如打印日志
+            System.err.println("警告: 在 allParameterCombos 中未找到键: " + key);
+        }
+
     }
 
     public void showCoverageReport() {

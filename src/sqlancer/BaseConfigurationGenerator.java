@@ -18,7 +18,7 @@ public abstract class BaseConfigurationGenerator  {
     public static Map<Set<ConfigurationAction>, Double> allParameterCombos= new HashMap<>(1000000);
     public static Map<Set<ConfigurationAction>, Double> proParameterCombos= new HashMap<>(1000);
     public static boolean isTrainingPhase = false;
-    public static final int TRAINING_SAMPLES = 1;
+    public static final int TRAINING_SAMPLES = 4;
     private double weightSum = 0.0;
     public static List<ConfigurationAction> currentGeneratedActions = new ArrayList<>();
 
@@ -40,6 +40,7 @@ public abstract class BaseConfigurationGenerator  {
      * @throws IOException 如果文件写入失败
      */
     public void saveParameterFeatureProbabilitiesToFile(String filePath) throws IOException {
+        filePath =filePath+ "_feature_weights.txt";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             for (Map.Entry<ConfigurationAction, double[]> entry : parameterFeatureProbabilities.entrySet()) {
                 ConfigurationAction action = entry.getKey();
@@ -68,7 +69,7 @@ public abstract class BaseConfigurationGenerator  {
     public boolean loadParameterFeatureProbabilitiesFromFile(String filePath) throws IOException {
         // 加载前清空当前的 Map
         parameterFeatureProbabilities.clear();
-
+        filePath =filePath+ "_feature_weights.txt";
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -140,7 +141,7 @@ public abstract class BaseConfigurationGenerator  {
     public  void loadWeightsFromFile(String filePath) throws IOException {
         // 在加载新权重前，清空当前的 Map
         allParameterCombos.clear();
-
+        filePath =filePath+ "_config_weights.txt";
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -212,6 +213,10 @@ public abstract class BaseConfigurationGenerator  {
         Object generateValue(Randomly r);
         Scope[] getScopes();
         boolean canBeUsedInScope(Scope scope);
+
+        public boolean equals(Object o);
+
+        public int hashCode();
     }
 
     protected static class GenericAction implements ConfigurationAction {
@@ -252,7 +257,21 @@ public abstract class BaseConfigurationGenerator  {
             return false;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            //if (o == null || getClass() != o.getClass()) return false;
+            ConfigurationAction that = (ConfigurationAction) o;
+            // 比较所有关键字段
+            if (!Objects.equals(name, that.getName())) return false;
+            return true;
+        }
 
+        @Override
+        public int hashCode() {
+            // 使用相同的关键字段生成哈希码
+            return Objects.hash(name);
+        }
     }
 
     public BaseConfigurationGenerator(Randomly r, MainOptions options) {
@@ -336,13 +355,13 @@ public abstract class BaseConfigurationGenerator  {
                 return new ArrayList<>(actions);
             }
         }
-        Set<ConfigurationAction> randomActionSet = Randomly.fromOptions(proParameterCombos.keySet().toArray(new Set[0]));
+        Set randomActionSet = Randomly.fromOptions(proParameterCombos.keySet().toArray(new Set[0]));
         return new ArrayList<>(randomActionSet);
     }
 
-    public List<ConfigurationAction> generateActions() {
+    public void generateActions() {
         if(Randomly.getBooleanWithSmallProbability()) {
-            Set<ConfigurationAction> randomActionSet = Randomly.fromOptions(allParameterCombos.keySet().toArray(new Set[0]));
+            Set randomActionSet = Randomly.fromOptions(allParameterCombos.keySet().toArray(new Set[0]));
             while (proParameterCombos.containsKey(randomActionSet)) {
                 randomActionSet = Randomly.fromOptions(allParameterCombos.keySet().toArray(new Set[0]));
             }
@@ -350,7 +369,6 @@ public abstract class BaseConfigurationGenerator  {
         } else {
             currentGeneratedActions= selectActionsByWeight();
         }
-        return currentGeneratedActions;
     }
     public void topKSnapshot(int k) {
         // 最小堆：堆顶是当前 Top-K 里最小的那个

@@ -1,9 +1,7 @@
 package sqlancer.mysql.gen;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -14,14 +12,7 @@ import sqlancer.common.gen.NoRECGenerator;
 import sqlancer.common.gen.TLPWhereGenerator;
 import sqlancer.common.gen.UntypedExpressionGenerator;
 import sqlancer.common.schema.AbstractTables;
-import sqlancer.mariadb.MariaDBSchema;
-import sqlancer.mariadb.ast.MariaDBAggregate;
-import sqlancer.mariadb.ast.MariaDBColumnName;
-import sqlancer.mariadb.ast.MariaDBExpression;
-import sqlancer.mariadb.ast.MariaDBSelectStatement;
-import sqlancer.mysql.MySQLBugs;
 import sqlancer.mysql.MySQLGlobalState;
-import sqlancer.mysql.MySQLSchema;
 import sqlancer.mysql.MySQLSchema.MySQLColumn;
 import sqlancer.mysql.MySQLSchema.MySQLRowValue;
 import sqlancer.mysql.MySQLSchema.MySQLTable;

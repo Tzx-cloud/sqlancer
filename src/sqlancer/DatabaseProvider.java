@@ -60,5 +60,5 @@ public interface DatabaseProvider<G extends GlobalState<O, ?, C>, O extends DBMS
     StateToReproduce getStateToReproduce(String databaseName);
 
     void generateDatabaseWithConfigurationTraining(G globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception;
-    void generateDatabaseWithConfigurationTest(G globalState, List<BaseConfigurationGenerator.ConfigurationAction> actions) throws Exception;
+    Reproducer<G> generateDatabaseWithConfigurationTest(G globalState, List<BaseConfigurationGenerator.ConfigurationAction> actions) throws Exception;
 }

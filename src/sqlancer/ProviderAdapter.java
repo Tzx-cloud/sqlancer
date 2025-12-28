@@ -1,10 +1,7 @@
 package sqlancer;
 
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import sqlancer.StateToReproduce.OracleRunReproductionState;
@@ -52,21 +49,26 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
 
     @Override
     //Tang: 生成配置参数并进行测试
-    public void generateDatabaseWithConfigurationTest(G globalState, List<BaseConfigurationGenerator.ConfigurationAction> actions) throws Exception{
+    public Reproducer<G> generateDatabaseWithConfigurationTest(G globalState, List<BaseConfigurationGenerator.ConfigurationAction> actions) throws Exception{
 
         ParameteraAwareGenerator parameterAwareGenerator = new ParameteraAwareGenerator(getActionClass());
         List<? extends OracleFactory<G>> testOracleFactory = globalState.getDbmsSpecificOptions()
                 .getTestOracleFactory();
         parameterAwareGenerator.chooseFeature(actions);
+
         try {
             for (int i = 0; i < BaseConfigurationGenerator.TRAINING_SAMPLES; i++) {
+                globalState.getState().setStatements(new ArrayList<>());
                 generateConfiguration(globalState, actions.get(0));
                 generateConfiguration(globalState, actions.get(1));
                 generateDatabase(globalState);
                 checkViewsAreValid(globalState);
+                AFLMonitor.getInstance().refreshBuffer();
                 globalState.getManager().incrementCreateDatabase();
                 TestOracle<G> testOracle = testOracleFactory.get(0).create(globalState);
-                for (int j = 0; j <10000; j++) {
+                long startTime = System.currentTimeMillis();
+                long durationMillis = 15000; // 15 秒
+                while (System.currentTimeMillis() - startTime < durationMillis) {
                     try (OracleRunReproductionState localState = globalState.getState().createLocalState()) {
                         assert localState != null;
                         try {
@@ -76,19 +78,28 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
                             Main.nrSuccessfulActions.addAndGet(1);
                         } catch (IgnoreMeException ignored) {
                         } catch (AssertionError e) {
-                            e.printStackTrace();
+                            Reproducer<G> reproducer = testOracle.getLastReproducer();
+                            if (reproducer != null) {
+                                return reproducer;
+                            }
+                            //e.printStackTrace();
                             throw e;
                         }
                         localState.executedWithoutError();
                     }
                 }
+
             }
             generateDefaultConfiguration(globalState, actions.get(0));
             generateDefaultConfiguration(globalState, actions.get(1));
-        }finally {
+        }catch (Exception e){
+            throw e;
+        }
+        finally {
             globalState.setSchema(null);
             globalState.getConnection().close();
         }
+        return null;
     }
 
     @Override

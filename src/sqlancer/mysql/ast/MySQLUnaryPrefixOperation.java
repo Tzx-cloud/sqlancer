@@ -10,6 +10,12 @@ public class MySQLUnaryPrefixOperation extends UnaryOperatorNode<MySQLExpression
         implements MySQLExpression {
 
     public enum MySQLUnaryPrefixOperator implements Operator {
+        IN("~"){
+            @Override
+            public MySQLConstant applyNotNull(MySQLConstant expr) {
+                return expr;
+            }
+        },
         NOT("!", "NOT") {
             @Override
             public MySQLConstant applyNotNull(MySQLConstant expr) {
@@ -27,6 +33,7 @@ public class MySQLUnaryPrefixOperation extends UnaryOperatorNode<MySQLExpression
             public MySQLConstant applyNotNull(MySQLConstant expr) {
                 if (expr.isString()) {
                     // TODO: implement floating points
+
                     throw new IgnoreMeException();
                 } else if (expr.isInt()) {
                     if (!expr.isSigned()) {
