@@ -10,6 +10,7 @@ import sqlancer.common.oracle.CompositeTestOracle;
 import sqlancer.common.oracle.TestOracle;
 import sqlancer.common.schema.AbstractSchema;
 
+import static sqlancer.BaseConfigurationGenerator.currentGeneratedActions;
 import static sqlancer.ParameteraAwareGenerator.featureSet;
 
 public abstract class ProviderAdapter<G extends GlobalState<O, ? extends AbstractSchema<G, ?>, C>, O extends DBMSSpecificOptions<? extends OracleFactory<G>>, C extends SQLancerDBConnection>
@@ -57,13 +58,11 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
         parameterAwareGenerator.chooseFeature(actions);
 
         try {
-            for (int i = 0; i < BaseConfigurationGenerator.TRAINING_SAMPLES; i++) {
-                globalState.getState().setStatements(new ArrayList<>());
-                generateConfiguration(globalState, actions.get(0));
-                generateConfiguration(globalState, actions.get(1));
-                generateDatabase(globalState);
-                checkViewsAreValid(globalState);
-                AFLMonitor.getInstance().refreshBuffer();
+            globalState.getState().setStatements(new ArrayList<>());
+            generateConfiguration(globalState , actions.get(0));
+            generateConfiguration(globalState , actions.get(1));
+            generateDatabase(globalState);
+            checkViewsAreValid(globalState);
                 globalState.getManager().incrementCreateDatabase();
                 TestOracle<G> testOracle = testOracleFactory.get(0).create(globalState);
                 long startTime = System.currentTimeMillis();
@@ -89,7 +88,6 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
                     }
                 }
 
-            }
             generateDefaultConfiguration(globalState, actions.get(0));
             generateDefaultConfiguration(globalState, actions.get(1));
         }catch (Exception e){

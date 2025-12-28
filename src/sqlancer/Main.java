@@ -71,7 +71,7 @@ public final class Main {
             LOG_DIRECTORY.mkdir();
         }
     }
-//hello
+    //hello
     private Main() {
     }
 
@@ -416,7 +416,7 @@ public final class Main {
         private final Randomly r;
 
         public DBMSExecutor(DatabaseProvider<G, O, C> provider, MainOptions options, O dbmsSpecificOptions,
-                String databaseName, Randomly r) {
+                            String databaseName, Randomly r) {
             this.provider = provider;
             this.options = options;
             this.databaseName = databaseName;
@@ -508,19 +508,23 @@ public final class Main {
                 if(testCount%1000==0) {
                     configGenerator.topKSnapshot(1000);
                 }
-                 configGenerator.generateActions();
-                try (C con = provider.createDatabase(state)) {
-                    QueryManager<C> manager = new QueryManager<>(state);
-                    state.setManager(manager);
-                    state.setConnection(con);
-                    if (options.logEachSelect()) {
-                        logger.writeCurrent(state.getState());
-                    }
-                    //AFLMonitor.getInstance().refreshBuffer();
-                    provider.generateDatabaseWithConfigurationTest(state, currentGeneratedActions);
-                    AFLMonitor.getInstance().updateComWeight(currentGeneratedActions);
-                    testCount++;
+                configGenerator.generateActions();
+                for (int i = 0; i < BaseConfigurationGenerator.TRAINING_SAMPLES; i++) {
 
+                    try (C con = provider.createDatabase(state)) {
+                        AFLMonitor.getInstance().refreshBuffer();
+                        QueryManager<C> manager = new QueryManager<>(state);
+                        state.setManager(manager);
+                        state.setConnection(con);
+                        if (options.logEachSelect()) {
+                            logger.writeCurrent(state.getState());
+                        }
+                        //AFLMonitor.getInstance().refreshBuffer();
+                        provider.generateDatabaseWithConfigurationTest(state, currentGeneratedActions);
+                        AFLMonitor.getInstance().updateComWeight(currentGeneratedActions);
+                        testCount++;
+
+                    }
                 }
             }
             try {
@@ -825,7 +829,7 @@ public final class Main {
                 }
 
                 private boolean run(MainOptions options, ExecutorService execService,
-                        DBMSExecutorFactory<?, ?, ?> executorFactory, Randomly r, final String databaseName) {
+                                    DBMSExecutorFactory<?, ?, ?> executorFactory, Randomly r, final String databaseName) {
                     DBMSExecutor<?, ?, ?> executor = executorFactory.getDBMSExecutor(databaseName, r);
                     try {
                         executor.run();
@@ -964,32 +968,32 @@ public final class Main {
             Randomly r = new Randomly(seed);
 
 
-                DBMSExecutor<?, ?, ?> executor = executorFactory.getDBMSExecutor(databaseName, r);
-                try {
-                    executor.runConfigurationTesting();
-                } catch (IgnoreMeException e) {
-                    continue;
-                } catch (Throwable reduce) {
-                    reduce.printStackTrace();
-                    executor.getStateToReproduce().exception = reduce.getMessage();
-                    executor.getLogger().logFileWriter = null;
-                    executor.getLogger().logException(reduce, executor.getStateToReproduce());
-                    if (options.serializeReproduceState()) {
-                        executor.getStateToReproduce().logStatement(reduce.getMessage()); // add the error statement
-                        executor.getStateToReproduce().serialize(executor.getLogger().getReproduceFilePath());
-                    }
-                } finally {
-                    try {
-                        if (options.logEachSelect()) {
-                            if (executor.getLogger().currentFileWriter != null) {
-                                executor.getLogger().currentFileWriter.close();
-                            }
-                            executor.getLogger().currentFileWriter = null;
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+            DBMSExecutor<?, ?, ?> executor = executorFactory.getDBMSExecutor(databaseName, r);
+            try {
+                executor.runConfigurationTesting();
+            } catch (IgnoreMeException e) {
+                continue;
+            } catch (Throwable reduce) {
+                reduce.printStackTrace();
+                executor.getStateToReproduce().exception = reduce.getMessage();
+                executor.getLogger().logFileWriter = null;
+                executor.getLogger().logException(reduce, executor.getStateToReproduce());
+                if (options.serializeReproduceState()) {
+                    executor.getStateToReproduce().logStatement(reduce.getMessage()); // add the error statement
+                    executor.getStateToReproduce().serialize(executor.getLogger().getReproduceFilePath());
                 }
+            } finally {
+                try {
+                    if (options.logEachSelect()) {
+                        if (executor.getLogger().currentFileWriter != null) {
+                            executor.getLogger().currentFileWriter.close();
+                        }
+                        executor.getLogger().currentFileWriter = null;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
 
 
         }
