@@ -10,7 +10,7 @@ public class TestMySQLFuzzing {
 
     @Test
     public void testMySQLFuzzing() throws InterruptedException {
-        String[] args={"--use-reducer","mysql","--oracle","TLP_WHERE"};
+        String[] args={"mysql","--oracle","TLP_WHERE"};
         //Main.main(args);
         Main.executeMainOnWeb(args);
 //        SqlancerRunner runner = new SqlancerRunner();
