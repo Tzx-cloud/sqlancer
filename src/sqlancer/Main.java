@@ -990,6 +990,7 @@ public final class Main {
                 if(AFLMonitor.getInstance().isDBMSAlive()==false){
                     try {
                         executor.getLogger().getLogFileWriter().write("This is a crush! \n");
+                        executor.getLogger().getLogFileWriter().flush();
                         AFLMonitor.getInstance().restartDBMS();
                     } catch (Exception e) {
                         e.printStackTrace();

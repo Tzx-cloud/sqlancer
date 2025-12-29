@@ -10,7 +10,6 @@ MYSQL_CONFIG = {
     'user': 'root',
     'password': 'root' # <-- 修改为您的 MySQL root 密码
 }
-DATABASE_NAME = 'database0'
 LOG_FILE_PATH = 'database0.log'
 
 def execute_sql_from_log(log_path):
@@ -28,12 +27,15 @@ def execute_sql_from_log(log_path):
             in_sql_block = False
             for line in f:
                 # 从第一条 CREATE TABLE 语句开始作为 SQL 块的起点
-                if line.strip().upper().startswith('CREATE TABLE'):
+                if line.strip().upper().startswith('DROP DATABASE'):
                     in_sql_block = True
 
                 # 忽略注释和空行
                 if in_sql_block and not line.strip().startswith('--') and line.strip():
                     sql_statements.append(line.strip())
+
+                if not line.strip():
+                    break
 
     except Exception as e:
         print(f"读取或解析日志文件时出错: {e}")
@@ -51,11 +53,7 @@ def execute_sql_from_log(log_path):
         cursor = cnx.cursor()
         print("连接成功。")
 
-        print(f"正在准备数据库 '{DATABASE_NAME}'...")
-        cursor.execute(f"DROP DATABASE IF EXISTS {DATABASE_NAME}")
-        cursor.execute(f"CREATE DATABASE {DATABASE_NAME}")
-        cursor.execute(f"USE {DATABASE_NAME}")
-        print("数据库已重置。")
+
 
         print(f"\n开始执行 {len(sql_statements)} 条 SQL 语句...")
         for i, sql in enumerate(sql_statements):
