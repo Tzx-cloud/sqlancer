@@ -961,8 +961,7 @@ public final class Main {
         final AtomicBoolean someOneFails = new AtomicBoolean(false);
 
         //Tang:
-        for (; bugs.intValue() < options.getTotalNumberTries(); bugs.addAndGet(1)) {
-            int i = bugs.intValue();
+        for (int i=0; i < options.getTotalNumberTries(); i++) {
             final String databaseName = options.getDatabasePrefix() + i;
             final long seed;
             if (options.getRandomSeed() == -1) {
@@ -979,6 +978,7 @@ public final class Main {
             } catch (IgnoreMeException e) {
                 continue;
             } catch (Throwable reduce) {
+                bugs.addAndGet(1);
                 reduce.printStackTrace();
                 executor.getStateToReproduce().exception = reduce.getMessage();
                 executor.getLogger().logFileWriter = null;
