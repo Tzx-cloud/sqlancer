@@ -10,7 +10,7 @@ MYSQL_CONFIG = {
     'user': 'root',
     'password': 'root' # <-- 修改为您的 MySQL root 密码
 }
-LOG_FILE_PATH = 'database0.log'
+LOG_FILE_PATH = 'logicbug3.log'
 
 def execute_sql_from_log(log_path):
     """

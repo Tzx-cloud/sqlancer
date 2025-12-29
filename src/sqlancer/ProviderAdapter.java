@@ -89,8 +89,6 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
 
             generateDefaultConfiguration(globalState, actions.get(0));
             generateDefaultConfiguration(globalState, actions.get(1));
-        }catch (Exception e){
-            throw e;
         }
         finally {
             globalState.setSchema(null);
