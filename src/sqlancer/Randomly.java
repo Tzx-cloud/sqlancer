@@ -457,6 +457,32 @@ public final class Randomly {
         return getNextLong(left, right);
     }
 
+    /**
+     * 获取一个长整型数，该数有一定概率为边界值。
+     *
+     * @param left  下界（包含）
+     * @param right 上界（包含）
+     * @return 在 [left, right] 范围内的长整型数
+     */
+    public long getLongWithBoundaryBias(long left, long right) {
+        if (left > right) {
+            throw new IllegalArgumentException("left must be less than or equal to right");
+        }
+        if (left == right) {
+            return left;
+        }
+
+        // 20% 的概率返回 left，20% 的概率返回 right
+        int bias = getNextInt(0, 10);
+        if (bias <2) {
+            return left;
+        } else if (bias >7) {
+            return right;
+        }
+
+        return getNextLong(left, right);
+    }
+
     public BigInteger getBigInteger(BigInteger left, BigInteger right) {
         if (left.equals(right)) {
             return left;

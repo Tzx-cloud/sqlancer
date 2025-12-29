@@ -509,9 +509,15 @@ public final class Main {
                     configGenerator.topKSnapshot(1000);
                 }
                 configGenerator.generateActions();
+                AFLMonitor.testcaseNum =0;
                 for (int i = 0; i < BaseConfigurationGenerator.TRAINING_SAMPLES; i++) {
-
+                    state.getState().setStatements(new ArrayList<>());
                     try (C con = provider.createDatabase(state)) {
+                        try {
+                            stateToRepro.databaseVersion = con.getDatabaseVersion();
+                        } catch (Exception e) {
+
+                        }
                         AFLMonitor.getInstance().refreshBuffer();
                         QueryManager<C> manager = new QueryManager<>(state);
                         state.setManager(manager);
@@ -521,11 +527,10 @@ public final class Main {
                         }
                         //AFLMonitor.getInstance().refreshBuffer();
                         provider.generateDatabaseWithConfigurationTest(state, currentGeneratedActions);
-                        AFLMonitor.getInstance().updateComWeight(currentGeneratedActions);
-                        testCount++;
-
                     }
                 }
+                AFLMonitor.getInstance().updateComWeight(currentGeneratedActions);
+                testCount++;
             }
             try {
                 logger.getCurrentFileWriter().close();
@@ -981,6 +986,14 @@ public final class Main {
                 if (options.serializeReproduceState()) {
                     executor.getStateToReproduce().logStatement(reduce.getMessage()); // add the error statement
                     executor.getStateToReproduce().serialize(executor.getLogger().getReproduceFilePath());
+                }
+                if(AFLMonitor.getInstance().isDBMSAlive()==false){
+                    try {
+                        executor.getLogger().getLogFileWriter().write("This is a crush! \n");
+                        AFLMonitor.getInstance().restartDBMS();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             } finally {
                 try {

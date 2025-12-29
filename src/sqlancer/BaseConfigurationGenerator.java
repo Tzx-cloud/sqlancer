@@ -283,7 +283,6 @@ public abstract class BaseConfigurationGenerator  {
 
     // 抽象方法，子类必须实现
     protected abstract String getDatabaseType();
-    protected abstract SQLQueryAdapter generateConfigForAction(Object action);
     protected abstract String getActionName(Object action);
     public abstract SQLQueryAdapter generateConfigForParameter( ConfigurationAction action);
     public abstract SQLQueryAdapter generateDefaultConfigForParameter( ConfigurationAction action);

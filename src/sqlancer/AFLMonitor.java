@@ -36,16 +36,11 @@ public class AFLMonitor implements AutoCloseable {
 
     private int shmId = -1;
     private Pointer shmPtr = null;
-    private final AtomicBoolean running = new AtomicBoolean(false);
-    private final AtomicBoolean runningWatch = new AtomicBoolean(false);
     public final static byte[] coverageBuf = new byte[AFL_MAP_SIZE];
     private static volatile AFLMonitor INSTANCE;
     private Process dbmsProcess = null;
     private final AtomicBoolean closed = new AtomicBoolean(false);
-
-    public byte[] getCoverageBuf() {
-        return coverageBuf;
-    }
+    public static int testcaseNum=0;
 
     private AFLMonitor() {
         if (!createSharedMemory()) {
@@ -65,6 +60,35 @@ public class AFLMonitor implements AutoCloseable {
         try {
             close();
         } catch (Exception ignored) {}
+    }
+
+
+    /**
+     * 检查DBMS进程是否仍在运行。
+     * @return 如果进程正在运行，则为 true；否则为 false。
+     */
+    public boolean isDBMSAlive() {
+        return dbmsProcess != null && dbmsProcess.isAlive();
+    }
+
+    /**
+     * 重新启动DBMS进程。如果现有进程正在运行，则先停止它。
+     */
+    public void restartDBMS() throws InterruptedException {
+        System.out.println("正在重启 DBMS 进程...");
+        if (isDBMSAlive()) {
+            close();
+        }
+        try {
+            dbmsProcess = startDBMS();
+            System.out.println("DBMS 进程已启动，等待初始化...");
+            Thread.sleep(5000); // 等待 mysqld 启动完成
+            System.out.println("DBMS 已就绪。");
+        } catch (IOException | InterruptedException e) {
+            System.err.println("重启 DBMS 失败: " + e.getMessage());
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("无法重启 DBMS", e);
+        }
     }
 
     @Override
@@ -181,7 +205,7 @@ public class AFLMonitor implements AutoCloseable {
 
         // 3. 检查 weight 是否为 null，避免 NullPointerException
         if (weight != null) {
-            weight *= (1.0 + alpha * newEdges / (10000.0 + 1.0));
+            weight *= (1.0 + alpha * newEdges / (testcaseNum + 1.0));
             // 4. 使用相同的键来更新 Map
             allParameterCombos.replace(key, weight);
         } else {
@@ -191,120 +215,120 @@ public class AFLMonitor implements AutoCloseable {
 
     }
 
-    public void showCoverageReport() {
-        refreshBuffer();
-        int hitEdges = 0;
-        long totalHits = 0;
-        int maxHits = 0;
-        int maxIdx = -1;
-        for (int i = 0; i < AFL_MAP_SIZE; i++) {
-            int v = coverageBuf[i] & 0xFF;
-            if (v > 0) {
-                hitEdges++;
-                totalHits += v;
-                if (v > maxHits) {
-                    maxHits = v;
-                    maxIdx = i;
-                }
-            }
-        }
-        System.out.println("\n=== MySQL Coverage Report ===");
-        double pct = hitEdges * 100.0 / AFL_MAP_SIZE;
-        System.out.printf("Hit edges:       %d/%d (%.2f%%)%n", hitEdges, AFL_MAP_SIZE, pct);
-        System.out.println("Total hits:      " + totalHits);
-        System.out.println("Hottest edge:    " + maxIdx + " (hit " + maxHits + " times)");
-        System.out.printf("Avg hits/edge:   %.1f%n", hitEdges > 0 ? (double) totalHits / hitEdges : 0.0);
-        if (hitEdges == 0) {
-            System.out.println("Status:          No coverage detected");
-        } else if (hitEdges < 100) {
-            System.out.println("Status:          Low coverage");
-        } else if (hitEdges < 1000) {
-            System.out.println("Status:          Moderate coverage");
-        } else {
-            System.out.println("Status:          Good coverage");
-        }
-        System.out.println("==============================\n");
-    }
-
-    public void showDetailedCoverage() {
-        refreshBuffer();
-        System.out.println("\n=== Top 20 Hottest Edges ===");
-        // 复制
-        byte[] temp = Arrays.copyOf(coverageBuf, coverageBuf.length);
-        for (int rank = 1; rank <= 20; rank++) {
-            int maxHits = 0;
-            int idx = -1;
-            for (int i = 0; i < temp.length; i++) {
-                int v = temp[i] & 0xFF;
-                if (v > maxHits) {
-                    maxHits = v;
-                    idx = i;
-                }
-            }
-            if (maxHits == 0) break;
-            int barLen = maxHits * 20 / 255;
-            StringBuilder bar = new StringBuilder("[");
-            for (int i = 0; i < 20; i++) bar.append(i < barLen ? '#' : ' ');
-            bar.append(']');
-            System.out.printf("%2d. Edge %-6d: %4d hits %s%n", rank, idx, maxHits, bar);
-            temp[idx] = 0;
-        }
-        System.out.println("=============================\n");
-    }
+//    public void showCoverageReport() {
+//        refreshBuffer();
+//        int hitEdges = 0;
+//        long totalHits = 0;
+//        int maxHits = 0;
+//        int maxIdx = -1;
+//        for (int i = 0; i < AFL_MAP_SIZE; i++) {
+//            int v = coverageBuf[i] & 0xFF;
+//            if (v > 0) {
+//                hitEdges++;
+//                totalHits += v;
+//                if (v > maxHits) {
+//                    maxHits = v;
+//                    maxIdx = i;
+//                }
+//            }
+//        }
+//        System.out.println("\n=== MySQL Coverage Report ===");
+//        double pct = hitEdges * 100.0 / AFL_MAP_SIZE;
+//        System.out.printf("Hit edges:       %d/%d (%.2f%%)%n", hitEdges, AFL_MAP_SIZE, pct);
+//        System.out.println("Total hits:      " + totalHits);
+//        System.out.println("Hottest edge:    " + maxIdx + " (hit " + maxHits + " times)");
+//        System.out.printf("Avg hits/edge:   %.1f%n", hitEdges > 0 ? (double) totalHits / hitEdges : 0.0);
+//        if (hitEdges == 0) {
+//            System.out.println("Status:          No coverage detected");
+//        } else if (hitEdges < 100) {
+//            System.out.println("Status:          Low coverage");
+//        } else if (hitEdges < 1000) {
+//            System.out.println("Status:          Moderate coverage");
+//        } else {
+//            System.out.println("Status:          Good coverage");
+//        }
+//        System.out.println("==============================\n");
+//    }
+//
+//    public void showDetailedCoverage() {
+//        refreshBuffer();
+//        System.out.println("\n=== Top 20 Hottest Edges ===");
+//        // 复制
+//        byte[] temp = Arrays.copyOf(coverageBuf, coverageBuf.length);
+//        for (int rank = 1; rank <= 20; rank++) {
+//            int maxHits = 0;
+//            int idx = -1;
+//            for (int i = 0; i < temp.length; i++) {
+//                int v = temp[i] & 0xFF;
+//                if (v > maxHits) {
+//                    maxHits = v;
+//                    idx = i;
+//                }
+//            }
+//            if (maxHits == 0) break;
+//            int barLen = maxHits * 20 / 255;
+//            StringBuilder bar = new StringBuilder("[");
+//            for (int i = 0; i < 20; i++) bar.append(i < barLen ? '#' : ' ');
+//            bar.append(']');
+//            System.out.printf("%2d. Edge %-6d: %4d hits %s%n", rank, idx, maxHits, bar);
+//            temp[idx] = 0;
+//        }
+//        System.out.println("=============================\n");
+//    }
 
     public void clearCoverage() {
         if (shmPtr == null) return;
         shmPtr.setMemory(0, AFL_MAP_SIZE, (byte) 0);
     }
 
-    public void watchMode(Scanner sc) {
-        System.out.println("监控模式（回车退出）");
-        long start = System.currentTimeMillis();
-        int prevEdges = 0;
-        Thread inputThread = new Thread(() -> {
-            sc.nextLine();
-            runningWatch.set(false);
-        });
-        runningWatch.set(true);
-        inputThread.setDaemon(true);
-        inputThread.start();
-
-        while (runningWatch.get()) {
-            refreshBuffer();
-            int edges = 0;
-            long hits = 0;
-            for (int i = 0; i < AFL_MAP_SIZE; i++) {
-                int v = coverageBuf[i] & 0xFF;
-                if (v > 0) {
-                    edges++;
-                    hits += v;
-                }
-            }
-            long elapsedMs = System.currentTimeMillis() - start;
-            long elapsedSec = Math.max(1, elapsedMs / 1000);
-            double rate = edges * 60.0 / elapsedSec;
-            System.out.printf("\r[%02d:%02d] Edges: %d (+%d) | Hits: %d | Rate: %.1f edges/min   ",
-                    (elapsedSec / 60), (elapsedSec % 60),
-                    edges, edges - prevEdges, hits, rate);
-            prevEdges = edges;
-            try {
-                sleep(500);
-            } catch (InterruptedException ignored) {}
-        }
-        System.out.println("\n退出监控模式\n");
-    }
-
-    public void saveCoverage() {
-        refreshBuffer();
-        String name = "mysql_coverage_" +
-                new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".dat";
-        try (FileOutputStream fos = new FileOutputStream(name)) {
-            fos.write(coverageBuf);
-            System.out.println("已保存: " + name + " (" + AFL_MAP_SIZE + " bytes)\n");
-        } catch (IOException e) {
-            System.err.println("写入失败: " + e.getMessage());
-        }
-    }
+//    public void watchMode(Scanner sc) {
+//        System.out.println("监控模式（回车退出）");
+//        long start = System.currentTimeMillis();
+//        int prevEdges = 0;
+//        Thread inputThread = new Thread(() -> {
+//            sc.nextLine();
+//            runningWatch.set(false);
+//        });
+//        runningWatch.set(true);
+//        inputThread.setDaemon(true);
+//        inputThread.start();
+//
+//        while (runningWatch.get()) {
+//            refreshBuffer();
+//            int edges = 0;
+//            long hits = 0;
+//            for (int i = 0; i < AFL_MAP_SIZE; i++) {
+//                int v = coverageBuf[i] & 0xFF;
+//                if (v > 0) {
+//                    edges++;
+//                    hits += v;
+//                }
+//            }
+//            long elapsedMs = System.currentTimeMillis() - start;
+//            long elapsedSec = Math.max(1, elapsedMs / 1000);
+//            double rate = edges * 60.0 / elapsedSec;
+//            System.out.printf("\r[%02d:%02d] Edges: %d (+%d) | Hits: %d | Rate: %.1f edges/min   ",
+//                    (elapsedSec / 60), (elapsedSec % 60),
+//                    edges, edges - prevEdges, hits, rate);
+//            prevEdges = edges;
+//            try {
+//                sleep(500);
+//            } catch (InterruptedException ignored) {}
+//        }
+//        System.out.println("\n退出监控模式\n");
+//    }
+//
+//    public void saveCoverage() {
+//        refreshBuffer();
+//        String name = "mysql_coverage_" +
+//                new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".dat";
+//        try (FileOutputStream fos = new FileOutputStream(name)) {
+//            fos.write(coverageBuf);
+//            System.out.println("已保存: " + name + " (" + AFL_MAP_SIZE + " bytes)\n");
+//        } catch (IOException e) {
+//            System.err.println("写入失败: " + e.getMessage());
+//        }
+//    }
 
     public void cleanup() {
         if (shmPtr != null) {

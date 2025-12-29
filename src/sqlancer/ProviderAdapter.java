@@ -58,7 +58,6 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
         parameterAwareGenerator.chooseFeature(actions);
 
         try {
-            globalState.getState().setStatements(new ArrayList<>());
             generateConfiguration(globalState , actions.get(0));
             generateConfiguration(globalState , actions.get(1));
             generateDatabase(globalState);
@@ -73,7 +72,7 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
                         try {
                             globalState.getManager().incrementSelectQueryCount();
                             testOracle.check();
-
+                            AFLMonitor.testcaseNum++;
                             Main.nrSuccessfulActions.addAndGet(1);
                         } catch (IgnoreMeException ignored) {
                         } catch (AssertionError e) {
