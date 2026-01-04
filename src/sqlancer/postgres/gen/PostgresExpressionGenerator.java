@@ -9,12 +9,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import sqlancer.IgnoreMeException;
-import sqlancer.Randomly;
+import sqlancer.*;
 import sqlancer.common.gen.CERTGenerator;
 import sqlancer.common.gen.ExpressionGenerator;
 import sqlancer.common.gen.NoRECGenerator;
 import sqlancer.common.gen.TLPWhereGenerator;
+import sqlancer.mysql.gen.MySQLExpressionGenerator;
 import sqlancer.postgres.PostgresBugs;
 import sqlancer.postgres.PostgresCompoundDataType;
 import sqlancer.postgres.PostgresGlobalState;
@@ -68,6 +68,8 @@ import sqlancer.postgres.ast.PostgresTableReference;
 import sqlancer.postgres.ast.PostgresWindowFunction;
 import sqlancer.postgres.ast.PostgresWindowFunction.WindowFrame;
 import sqlancer.postgres.ast.PostgresWindowFunction.WindowSpecification;
+
+import static sqlancer.ParameteraAwareGenerator.featureSet;
 
 public class PostgresExpressionGenerator implements ExpressionGenerator<PostgresExpression>,
         NoRECGenerator<PostgresSelect, PostgresJoin, PostgresExpression, PostgresTable, PostgresColumn>,
@@ -126,7 +128,29 @@ public class PostgresExpressionGenerator implements ExpressionGenerator<Postgres
         return orderBys;
     }
 
-    private enum BooleanExpression {
+    //Tang: add parameter-aware generation
+    public BooleanExpression selectAction(){
+        if(BaseConfigurationGenerator.isTrainingPhase){
+            BooleanExpression actions = Randomly.fromOptions(BooleanExpression.values());
+            featureSet.add(actions);
+            return actions;
+        } else {
+            double random = Randomly.getPercentage();
+            double cumulativeProbability = 0.0;
+
+            for(BooleanExpression action : BooleanExpression.values()) {
+
+                cumulativeProbability += ParameteraAwareGenerator.comActionProbabilities[action.ordinal()];
+
+                if (random <= cumulativeProbability) {
+                    return action;
+                }
+            }
+            return Randomly.fromOptions(BooleanExpression.values());
+        }
+    }
+
+    private enum BooleanExpression implements ExpressionAction {
         POSTFIX_OPERATOR, NOT, BINARY_LOGICAL_OPERATOR, BINARY_COMPARISON, FUNCTION, CAST, LIKE, BETWEEN, IN_OPERATION,
         SIMILAR_TO, POSIX_REGEX, BINARY_RANGE_COMPARISON;
     }
@@ -177,7 +201,7 @@ public class PostgresExpressionGenerator implements ExpressionGenerator<Postgres
             validOptions.remove(BooleanExpression.BINARY_RANGE_COMPARISON);
         }
         BooleanExpression option = Randomly.fromList(validOptions);
-        switch (option) {
+        switch (selectAction()) {
         case POSTFIX_OPERATOR:
             PostfixOperator random = PostfixOperator.getRandom();
             return PostgresPostfixOperation

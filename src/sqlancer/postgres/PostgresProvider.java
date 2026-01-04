@@ -109,7 +109,7 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         TRUNCATE(PostgresTruncateGenerator::create), //
         VACUUM(PostgresVacuumGenerator::create), //
         REINDEX(PostgresReindexGenerator::create), //
-        SET(PostgresSetGenerator::create), //
+        // SET(PostgresSetGenerator::create), //
         CREATE_INDEX(PostgresIndexGenerator::generate), //
         SET_CONSTRAINTS((g) -> {
             StringBuilder sb = new StringBuilder();
@@ -172,7 +172,7 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
             break;
         case DELETE:
         case RESET_ROLE:
-        case SET:
+        //case SET:
             nrPerformed = r.getInteger(0, 5);
             break;
         case ANALYZE:

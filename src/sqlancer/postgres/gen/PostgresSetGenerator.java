@@ -4,16 +4,65 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.Function;
 
+import sqlancer.BaseConfigurationGenerator;
+import sqlancer.MainOptions;
 import sqlancer.Randomly;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.postgres.PostgresGlobalState;
 
-public final class PostgresSetGenerator {
+public final class PostgresSetGenerator extends BaseConfigurationGenerator {
 
-    private PostgresSetGenerator() {
+    @Override
+    public ConfigurationAction[] getAllActions() {
+        return Action.values();
     }
 
-    private enum ConfigurationOption {
+    private PostgresSetGenerator(Randomly r, MainOptions options) {
+        super(r, options);
+    }
+
+    @Override
+    protected String getDatabaseType() {
+        return "postgres";
+    }
+
+    @Override
+    protected String getActionName(Object action) {
+        return ((Action)action).getName();
+    }
+
+
+    @Override
+    public SQLQueryAdapter generateDefaultConfigForParameter(ConfigurationAction action) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SET ");
+        sb.append("LOCAL");
+        sb.append(" ");
+        sb.append(action.getName());
+        sb.append(" = DEFAULT");
+
+        return new SQLQueryAdapter(sb.toString());
+    }
+
+    @Override
+    public SQLQueryAdapter generateConfigForParameter(ConfigurationAction action) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SET ");
+
+
+        if (Randomly.getBoolean()) {
+            sb.append(Randomly.fromOptions("SESSION", "LOCAL"));
+            sb.append(" ");
+        }
+
+        sb.append(action.getName());
+        sb.append(" = ");
+        sb.append(action.generateValue(r));
+
+        return new SQLQueryAdapter(sb.toString());
+    }
+
+    private enum Action implements ConfigurationAction {
         // https://www.postgresql.org/docs/13/runtime-config-wal.html
         // This parameter can only be set at server start.
         // WAL_LEVEL("wal_level", (r) -> Randomly.fromOptions("replica", "minimal", "logical")),
@@ -116,31 +165,48 @@ public final class PostgresSetGenerator {
         PLAN_CACHE_MODE("plan_cache_mode",
                 (r) -> Randomly.fromOptions("auto", "force_generic_plan", "force_custom_plan"));
 
-        private String optionName;
-        private Function<Randomly, Object> op;
+        private final GenericAction delegate;
 
-        ConfigurationOption(String optionName, Function<Randomly, Object> op) {
-            this.optionName = optionName;
-            this.op = op;
+        Action(String name, Function<Randomly, Object> prod) {
+            this.delegate = new GenericAction(name, prod, Scope.GLOBAL);
+        }
+        @Override
+        public String getName() {
+            return delegate.getName();
+        }
+
+        @Override
+        public Object generateValue(Randomly r) {
+            return delegate.generateValue(r);
+        }
+
+        @Override
+        public Scope[] getScopes() {
+            return delegate.getScopes();
+        }
+
+        @Override
+        public boolean canBeUsedInScope(Scope scope) {
+            return delegate.canBeUsedInScope(scope);
         }
     }
 
     public static SQLQueryAdapter create(PostgresGlobalState globalState) {
         StringBuilder sb = new StringBuilder();
-        ArrayList<ConfigurationOption> options = new ArrayList<>(Arrays.asList(ConfigurationOption.values()));
-        options.remove(ConfigurationOption.DEFAULT_WITH_OIDS);
-        ConfigurationOption option = Randomly.fromList(options);
+        ArrayList<Action> options = new ArrayList<>(Arrays.asList(Action.values()));
+        options.remove(Action.DEFAULT_WITH_OIDS);
+        Action option = Randomly.fromList(options);
         sb.append("SET ");
         if (Randomly.getBoolean()) {
             sb.append(Randomly.fromOptions("SESSION", "LOCAL"));
             sb.append(" ");
         }
-        sb.append(option.optionName);
+        sb.append(option.getName());
         sb.append("=");
         if (Randomly.getBoolean()) {
             sb.append("DEFAULT");
         } else {
-            sb.append(option.op.apply(globalState.getRandomly()));
+            sb.append(option.generateValue(globalState.getRandomly()));
         }
         return new SQLQueryAdapter(sb.toString());
     }
