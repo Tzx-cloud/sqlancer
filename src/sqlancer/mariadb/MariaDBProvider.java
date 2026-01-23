@@ -9,24 +9,12 @@ import java.util.List;
 
 import com.google.auto.service.AutoService;
 
-import sqlancer.DatabaseProvider;
-import sqlancer.IgnoreMeException;
-import sqlancer.MainOptions;
-import sqlancer.Randomly;
-import sqlancer.SQLConnection;
-import sqlancer.SQLGlobalState;
-import sqlancer.SQLProviderAdapter;
+import sqlancer.*;
 import sqlancer.common.DBMSCommon;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mariadb.MariaDBProvider.MariaDBGlobalState;
-import sqlancer.mariadb.gen.MariaDBDeleteGenerator;
-import sqlancer.mariadb.gen.MariaDBIndexGenerator;
-import sqlancer.mariadb.gen.MariaDBInsertGenerator;
-import sqlancer.mariadb.gen.MariaDBSetGenerator;
-import sqlancer.mariadb.gen.MariaDBTableAdminCommandGenerator;
-import sqlancer.mariadb.gen.MariaDBTableGenerator;
-import sqlancer.mariadb.gen.MariaDBTruncateGenerator;
-import sqlancer.mariadb.gen.MariaDBUpdateGenerator;
+import sqlancer.mariadb.gen.*;
+import sqlancer.mysql.gen.MySQLExpressionGenerator;
 
 @AutoService(DatabaseProvider.class)
 public class MariaDBProvider extends SQLProviderAdapter<MariaDBGlobalState, MariaDBOptions> {
@@ -45,7 +33,7 @@ public class MariaDBProvider extends SQLProviderAdapter<MariaDBGlobalState, Mari
         INSERT, //
         OPTIMIZE, //
         REPAIR_TABLE, //
-        SET, //
+        //SET, //
         TRUNCATE, //
         UPDATE, //
         DELETE,
@@ -82,9 +70,9 @@ public class MariaDBProvider extends SQLProviderAdapter<MariaDBGlobalState, Mari
             case DELETE:
                 nrPerformed = globalState.getRandomly().getInteger(0, 2);
                 break;
-            case SET:
-                nrPerformed = 20;
-                break;
+//            case SET:
+//                nrPerformed = 20;
+//                break;
             case INSERT:
                 nrPerformed = globalState.getRandomly().getInteger(0, options.getMaxNumberInserts());
                 break;
@@ -142,9 +130,9 @@ public class MariaDBProvider extends SQLProviderAdapter<MariaDBGlobalState, Mari
                 case CREATE_INDEX:
                     query = MariaDBIndexGenerator.generate(globalState.getSchema());
                     break;
-                case SET:
-                    query = MariaDBSetGenerator.set(globalState.getRandomly(), options);
-                    break;
+//                case SET:
+//                    query = MariaDBSetGenerator.set(globalState.getRandomly(), options);
+//                    break;
                 case DELETE:
                     query = MariaDBDeleteGenerator.delete(globalState.getSchema(), globalState.getRandomly());
                     break;
@@ -163,6 +151,13 @@ public class MariaDBProvider extends SQLProviderAdapter<MariaDBGlobalState, Mari
             }
             total--;
         }
+    }
+
+
+    @Override
+    public Class<? extends ExpressionAction> getActionClass() {
+        // 确保 MySQLExpressionGenerator.Actions 是 public 的
+        return MariaDBExpressionGenerator.ExpressionType.class;
     }
 
     public static class MariaDBGlobalState extends SQLGlobalState<MariaDBOptions, MariaDBSchema> {

@@ -6,35 +6,144 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import sqlancer.BaseConfigurationGenerator;
 import sqlancer.MainOptions;
 import sqlancer.Randomly;
 import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mariadb.MariaDBBugs;
 import sqlancer.mariadb.MariaDBProvider.MariaDBGlobalState;
+import sqlancer.mysql.gen.MySQLSetGenerator;
 
-public class MariaDBSetGenerator {
-
-    private final Randomly r;
+public class MariaDBSetGenerator extends BaseConfigurationGenerator {
+    private static volatile MariaDBSetGenerator INSTANCE;
     private final StringBuilder sb = new StringBuilder();
 
     // currently, global options are only generated when a single thread is executed
     private boolean isSingleThreaded;
 
     public MariaDBSetGenerator(Randomly r, MainOptions options) {
-        this.r = r;
-        this.isSingleThreaded = options.getNumberConcurrentThreads() == 1;
+        super(r,options);
     }
 
     public static SQLQueryAdapter set(Randomly r, MainOptions options) {
         return new MariaDBSetGenerator(r, options).get();
     }
 
-    private enum Scope {
-        GLOBAL, SESSION
+    @Override
+    protected String getDatabaseType() {
+        return "mariadb";
     }
 
-    private enum Action {
+    @Override
+    protected String getActionName(Object action) {
+        return ((Action) action).name();
+    }
+
+    @Override
+    public  ConfigurationAction[] getAllActions() {
+        return Action.values();
+    }
+
+
+    @Override
+    public SQLQueryAdapter generateConfigForParameter(ConfigurationAction action) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SET ");
+
+        // 选择作用域
+        Scope[] scopes = action.getScopes();
+        Scope randomScope = Randomly.fromOptions(scopes);
+
+        switch (randomScope) {
+            case GLOBAL:
+                sb.append("GLOBAL");
+                break;
+            case SESSION:
+                sb.append("SESSION");
+                break;
+            default:
+                throw new AssertionError(randomScope);
+        }
+
+        sb.append(" ");
+        sb.append(action.getName());
+        sb.append(" = ");
+        sb.append(action.generateValue(r));
+
+        return new SQLQueryAdapter(sb.toString());
+    }
+
+    private SQLQueryAdapter get() {
+        sb.append("SET ");
+        Action a;
+        if (isSingleThreaded) {
+            a = Randomly.fromOptions(Action.values());
+            Scope[] scopes = a.getScopes();
+            Scope randomScope = Randomly.fromOptions(scopes);
+            switch (randomScope) {
+                case GLOBAL:
+                    sb.append("GLOBAL");
+                    break;
+                case SESSION:
+                    sb.append("SESSION");
+                    break;
+                default:
+                    throw new AssertionError(randomScope);
+            }
+
+        } else {
+            do {
+                a = Randomly.fromOptions(Action.values());
+            } while (!a.canBeUsedInScope(Scope.SESSION));
+            sb.append("SESSION");
+        }
+        sb.append(" ");
+        sb.append(a.getName());
+        sb.append(" = ");
+        sb.append(a.generateValue(r));
+        return new SQLQueryAdapter(sb.toString(), ExpectedErrors
+                .from("At least one of the 'in_to_exists' or 'materialization' optimizer_switch flags must be 'on'"));
+    }
+
+    @Override
+    public SQLQueryAdapter generateDefaultConfigForParameter(ConfigurationAction action) {
+        if (action.getName()=="optimizer_switch") {
+            return resetOptimizer();
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("SET ");
+
+        // 选择作用域
+        Scope[] scopes = action.getScopes();
+
+        if(scopes.length==2||scopes[0]==Scope.GLOBAL )sb.append("GLOBAL");
+        else sb.append("SESSION");
+
+        sb.append(" ");
+        sb.append(action.getName());
+        sb.append(" = DEFAULT");
+
+        return new SQLQueryAdapter(sb.toString());
+    }
+
+    public static BaseConfigurationGenerator getInstance(Randomly r, MainOptions options) {
+        if (INSTANCE == null) {
+            synchronized (MariaDBSetGenerator.class) {
+                if (INSTANCE == null) {
+                    INSTANCE = new MariaDBSetGenerator(r, options);
+                }
+            }
+        }
+        return INSTANCE;
+    }
+
+    public static SQLQueryAdapter resetOptimizer() {
+        return new SQLQueryAdapter("SET optimizer_switch='default'");
+    }
+
+
+    private enum Action implements ConfigurationAction {
 
         AUTOCOMMIT("autocommit", (r) -> 1, Scope.GLOBAL, Scope.SESSION), //
         BIG_TABLES("big_tables", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
@@ -105,18 +214,35 @@ public class MariaDBSetGenerator {
         // MariaDB-specific
         JOIN_CACHE_LEVEL("join_cache_level", (r) -> r.getInteger(1, 8), Scope.GLOBAL, Scope.SESSION);
 
-        private String name;
-        private Function<Randomly, Object> prod;
-        private final Scope[] scopes;
+        private final GenericAction delegate;
 
         Action(String name, Function<Randomly, Object> prod, Scope... scopes) {
-            if (scopes.length == 0) {
-                throw new AssertionError(name);
-            }
-            this.name = name;
-            this.prod = prod;
-            this.scopes = scopes.clone();
+            this.delegate = new GenericAction(name, prod, scopes);
         }
+
+        @Override
+        public String getName() {
+            return delegate.getName();
+        }
+
+        @Override
+        public Object generateValue(Randomly r) {
+            return delegate.generateValue(r);
+        }
+
+        @Override
+        public Scope[] getScopes() {
+            return delegate.getScopes();
+        }
+
+        @Override
+        public boolean canBeUsedInScope(Scope scope) {
+            return delegate.canBeUsedInScope(scope);
+        }
+
+        /*
+         * @see https://dev.mysql.com/doc/refman/8.0/en/switchable-optimizations.html
+         */
 
         private static String getOptimizerSwitchConfiguration(Randomly r) {
             StringBuilder sb = new StringBuilder();
@@ -137,55 +263,11 @@ public class MariaDBSetGenerator {
             return sb.toString();
         }
 
-        public boolean canBeUsedInScope(Scope session) {
-            for (Scope scope : scopes) {
-                if (scope == session) {
-                    return true;
-                }
-            }
-            return false;
-        }
 
-        public Scope[] getScopes() {
-            return scopes.clone();
-        }
     }
 
-    private SQLQueryAdapter get() {
-        sb.append("SET ");
-        Action a;
-        if (isSingleThreaded) {
-            a = Randomly.fromOptions(Action.values());
-            Scope[] scopes = a.getScopes();
-            Scope randomScope = Randomly.fromOptions(scopes);
-            switch (randomScope) {
-            case GLOBAL:
-                sb.append("GLOBAL");
-                break;
-            case SESSION:
-                sb.append("SESSION");
-                break;
-            default:
-                throw new AssertionError(randomScope);
-            }
 
-        } else {
-            do {
-                a = Randomly.fromOptions(Action.values());
-            } while (!a.canBeUsedInScope(Scope.SESSION));
-            sb.append("SESSION");
-        }
-        sb.append(" ");
-        sb.append(a.name);
-        sb.append(" = ");
-        sb.append(a.prod.apply(r));
-        return new SQLQueryAdapter(sb.toString(), ExpectedErrors
-                .from("At least one of the 'in_to_exists' or 'materialization' optimizer_switch flags must be 'on'"));
-    }
 
-    public static SQLQueryAdapter resetOptimizer() {
-        return new SQLQueryAdapter("SET optimizer_switch='default'");
-    }
 
     public static List<SQLQueryAdapter> getAllOptimizer(MariaDBGlobalState globalState) {
         List<SQLQueryAdapter> result = new ArrayList<>();

@@ -129,7 +129,7 @@ public class PostgresExpressionGenerator implements ExpressionGenerator<Postgres
     }
 
     //Tang: add parameter-aware generation
-    public BooleanExpression selectAction(){
+    private BooleanExpression selectAction(){
         if(BaseConfigurationGenerator.isTrainingPhase){
             BooleanExpression actions = Randomly.fromOptions(BooleanExpression.values());
             featureSet.add(actions);

@@ -449,12 +449,12 @@ public final class Main {
             stateToRepro = provider.getStateToReproduce(databaseName);
             stateToRepro.seedValue = r.getSeed();
             state.setState(stateToRepro);
-            logger = new StateLogger(databaseName, provider, options);
+
             state.setRandomly(r);
             state.setDatabaseName(databaseName);
             state.setMainOptions(options);
             state.setDbmsSpecificOptions(command);
-            state.setStateLogger(logger);
+
 
             BaseConfigurationGenerator configGenerator = GeneralConfigurationGenerator
                     .createGenerator(state.getDbmsSpecificOptions().getClass(),state);
@@ -463,8 +463,11 @@ public final class Main {
                 return;
             }
             state.setConfigurationGenerator(configGenerator);
-
+            int i=0;
             for (BaseConfigurationGenerator.ConfigurationAction action :configGenerator.getAllActions()) {
+                logger = new StateLogger(databaseName+(i++), provider, options);
+                state.setStateLogger(logger);
+                state.getState().setStatements(new ArrayList<>());
                 try (C con = provider.createDatabase(state)) {
                     QueryManager<C> manager = new QueryManager<>(state);
                     state.setManager(manager);
@@ -476,6 +479,12 @@ public final class Main {
                     provider.generateDatabaseWithConfigurationTraining(state,action);
 //                    AFLMonitor.getInstance().refreshBuffer();
 //                    byte[] coverageBuf = AFLMonitor.getInstance().getCoverageBuf();
+                }catch (IgnoreMeException ignored) {
+                } catch (Throwable reduce) {
+                    reduce.printStackTrace();
+                    state.getState().exception = reduce.getMessage();
+                    state.getLogger().logFileWriter = null;
+                    state.getLogger().logException(reduce,state.getState());
                 }
             }
             configGenerator.saveParameterFeatureProbabilitiesToFile(configGenerator.getDatabaseType());

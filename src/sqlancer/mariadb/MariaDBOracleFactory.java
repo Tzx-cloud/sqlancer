@@ -4,10 +4,14 @@ import java.sql.SQLException;
 
 import sqlancer.OracleFactory;
 import sqlancer.common.oracle.NoRECOracle;
+import sqlancer.common.oracle.TLPWhereOracle;
 import sqlancer.common.oracle.TestOracle;
 import sqlancer.common.query.ExpectedErrors;
 import sqlancer.mariadb.gen.MariaDBExpressionGenerator;
 import sqlancer.mariadb.oracle.MariaDBDQPOracle;
+import sqlancer.mysql.MySQLErrors;
+import sqlancer.mysql.MySQLGlobalState;
+import sqlancer.mysql.gen.MySQLExpressionGenerator;
 
 public enum MariaDBOracleFactory implements OracleFactory<MariaDBProvider.MariaDBGlobalState> {
 
@@ -32,5 +36,16 @@ public enum MariaDBOracleFactory implements OracleFactory<MariaDBProvider.MariaD
                 throws SQLException {
             return new MariaDBDQPOracle(globalState);
         }
+    },
+    TLP_WHERE {
+        @Override
+        public TestOracle<MariaDBProvider.MariaDBGlobalState> create(MariaDBProvider.MariaDBGlobalState globalState) throws SQLException {
+            MariaDBExpressionGenerator gen = new MariaDBExpressionGenerator(globalState.getRandomly() );
+            ExpectedErrors expectedErrors = ExpectedErrors.newErrors().with(MariaDBErrors.getCommonErrors())
+                    .build();
+
+            return new TLPWhereOracle<>(globalState, gen, expectedErrors);
+        }
+
     }
 }

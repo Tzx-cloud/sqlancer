@@ -1,5 +1,6 @@
 package sqlancer.common.oracle;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -11,6 +12,8 @@ import sqlancer.common.ast.newast.Join;
 import sqlancer.common.ast.newast.Select;
 import sqlancer.common.gen.TLPWhereGenerator;
 import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.common.query.SQLancerResultSet;
 import sqlancer.common.schema.AbstractSchema;
 import sqlancer.common.schema.AbstractTable;
 import sqlancer.common.schema.AbstractTableColumn;
@@ -93,13 +96,32 @@ public class TLPWhereOracle<Z extends Select<J, E, T, C>, J extends Join<E, T, C
         if (state.getOptions().logEachSelect()) {
             state.getLogger().writeCurrent(optimizedQueryString);
         }
-        try (Statement stat = state.getConnection().createStatement()) {
-            stat.executeQuery(optimizedQueryString);
-        } catch (SQLException e) {
-            Main.nrUnsuccessfulActions.addAndGet(1);
-            state.getLogger().writeCurrent(e.getMessage());
-            throw new IgnoreMeException();
+        boolean canonicalizeString = state.getOptions().canonicalizeSqlString();
+        SQLQueryAdapter q = new SQLQueryAdapter(optimizedQueryString, errors, false, canonicalizeString);
+        SQLancerResultSet result = null;
+        try {
+             result = q.executeAndGet(state);
+            if (result == null) {
+                throw new IgnoreMeException();
+            }
+        } catch (Exception e) {
+            if (e instanceof IgnoreMeException) {
+                throw e;
+            }
+
+            if (e.getMessage() == null) {
+                throw new AssertionError(optimizedQueryString, e);
+            }
+            if (errors.errorIsExpected(e.getMessage())) {
+                throw new IgnoreMeException();
+            }
+            throw new AssertionError(optimizedQueryString, e);
+        } finally {
+            if (result != null && !result.isClosed()) {
+                result.close();
+            }
         }
+
 
     }
 

@@ -1,6 +1,8 @@
 package sqlancer;
 
 
+import sqlancer.mariadb.MariaDBOptions;
+import sqlancer.mariadb.gen.MariaDBSetGenerator;
 import sqlancer.mysql.MySQLOptions;
 import sqlancer.mysql.gen.MySQLSetGenerator;
 
@@ -16,7 +18,9 @@ public class GeneralConfigurationGenerator {
         // else if (dbmsOptionsClass.equals(PostgresOptions.class)) {
         //     return PostgresConfigurationGenerator.getInstance(globalState.getRandomly(), (PostgresOptions) globalState.getOptions());
         // }
-        else {
+        else if (dbmsOptionsClass.equals(MariaDBOptions.class)) {
+            return MariaDBSetGenerator.getInstance(globalState.getRandomly(),  globalState.getOptions());
+        } else {
             throw new IllegalArgumentException("Unsupported database type: " + dbmsOptionsClass.getName());
         }
     }

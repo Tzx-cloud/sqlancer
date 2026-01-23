@@ -1,5 +1,7 @@
 package sqlancer.mariadb.ast;
 
+import sqlancer.mysql.ast.MySQLOrderByTerm;
+
 import java.util.List;
 
 public class MariaDBStringVisitor extends MariaDBVisitor {
@@ -175,5 +177,12 @@ public class MariaDBStringVisitor extends MariaDBVisitor {
     @Override
     public void visit(MariaDBTableReference ref) {
         sb.append(ref.getTable().getName());
+    }
+
+    @Override
+    public void visit(MariaDBOrderByTerm op) {
+        visit(op.getExpr());
+        sb.append(" ");
+        sb.append(op.getOrder() == MariaDBOrderByTerm.MariaDBOrder.ASC ? "ASC" : "DESC");
     }
 }

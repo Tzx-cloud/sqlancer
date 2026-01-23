@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.lang.Thread.sleep;
 import static sqlancer.BaseConfigurationGenerator.allParameterCombos;
 
+
 public class AFLMonitor implements AutoCloseable {
     // 常量
     public static final int AFL_MAP_SIZE = 1533718;
@@ -21,6 +22,7 @@ public class AFLMonitor implements AutoCloseable {
     private static final int IPC_CREAT = 01000;
     private static final int IPC_RMID = 0;
     private final double alpha = 0.4; // 用于权重更新的学习率
+
 
 
     // JNA 接口

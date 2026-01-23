@@ -104,13 +104,15 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
         List<? extends OracleFactory<G>> testOracleFactory = globalState.getDbmsSpecificOptions()
                 .getTestOracleFactory();
         try {
+            generateDatabase(globalState);
             for (int i = 0; i < BaseConfigurationGenerator.TRAINING_SAMPLES; i++) {
                 generateConfiguration(globalState, action);
-                generateDatabase(globalState);
                 checkViewsAreValid(globalState);
                 globalState.getManager().incrementCreateDatabase();
                 TestOracle<G> testOracle = testOracleFactory.get(0).create(globalState);
-                for (int j = 0; j <10000; j++) {
+                long startTime = System.currentTimeMillis();
+                long durationMillis = 15000; // 15 秒
+                while (System.currentTimeMillis() - startTime < durationMillis) {
                     try (OracleRunReproductionState localState = globalState.getState().createLocalState()) {
                         assert localState != null;
                         try {

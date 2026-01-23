@@ -1,5 +1,7 @@
 package sqlancer.mariadb.ast;
 
+import sqlancer.mysql.ast.MySQLOrderByTerm;
+
 public abstract class MariaDBVisitor {
 
     public abstract void visit(MariaDBConstant c);
@@ -26,6 +28,7 @@ public abstract class MariaDBVisitor {
 
     public abstract void visit(MariaDBTableReference join);
 
+    public abstract void visit(MariaDBOrderByTerm op);
     public void visit(MariaDBExpression expr) {
         if (expr instanceof MariaDBConstant) {
             visit((MariaDBConstant) expr);

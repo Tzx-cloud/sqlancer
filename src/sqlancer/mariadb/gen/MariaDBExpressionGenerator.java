@@ -3,36 +3,31 @@ package sqlancer.mariadb.gen;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import sqlancer.BaseConfigurationGenerator;
+import sqlancer.ExpressionAction;
+import sqlancer.ParameteraAwareGenerator;
 import sqlancer.Randomly;
 import sqlancer.common.gen.NoRECGenerator;
+import sqlancer.common.gen.TLPWhereGenerator;
 import sqlancer.common.schema.AbstractTables;
 import sqlancer.mariadb.MariaDBProvider;
 import sqlancer.mariadb.MariaDBSchema.MariaDBColumn;
 import sqlancer.mariadb.MariaDBSchema.MariaDBDataType;
 import sqlancer.mariadb.MariaDBSchema.MariaDBTable;
-import sqlancer.mariadb.ast.MariaDBAggregate;
+import sqlancer.mariadb.ast.*;
 import sqlancer.mariadb.ast.MariaDBAggregate.MariaDBAggregateFunction;
-import sqlancer.mariadb.ast.MariaDBBinaryOperator;
 import sqlancer.mariadb.ast.MariaDBBinaryOperator.MariaDBBinaryComparisonOperator;
-import sqlancer.mariadb.ast.MariaDBColumnName;
-import sqlancer.mariadb.ast.MariaDBConstant;
-import sqlancer.mariadb.ast.MariaDBExpression;
-import sqlancer.mariadb.ast.MariaDBFunction;
-import sqlancer.mariadb.ast.MariaDBFunctionName;
-import sqlancer.mariadb.ast.MariaDBInOperation;
-import sqlancer.mariadb.ast.MariaDBJoin;
-import sqlancer.mariadb.ast.MariaDBPostfixUnaryOperation;
 import sqlancer.mariadb.ast.MariaDBPostfixUnaryOperation.MariaDBPostfixUnaryOperator;
-import sqlancer.mariadb.ast.MariaDBSelectStatement;
 import sqlancer.mariadb.ast.MariaDBSelectStatement.MariaDBSelectType;
-import sqlancer.mariadb.ast.MariaDBTableReference;
-import sqlancer.mariadb.ast.MariaDBText;
-import sqlancer.mariadb.ast.MariaDBUnaryPrefixOperation;
 import sqlancer.mariadb.ast.MariaDBUnaryPrefixOperation.MariaDBUnaryPrefixOperator;
 
+
+import static sqlancer.ParameteraAwareGenerator.featureSet;
+
 public class MariaDBExpressionGenerator
-        implements NoRECGenerator<MariaDBSelectStatement, MariaDBJoin, MariaDBExpression, MariaDBTable, MariaDBColumn> {
+        implements NoRECGenerator<MariaDBSelectStatement, MariaDBJoin, MariaDBExpression, MariaDBTable, MariaDBColumn>, TLPWhereGenerator<MariaDBSelectStatement, MariaDBJoin, MariaDBExpression, MariaDBTable, MariaDBColumn> {
 
     private final Randomly r;
     private List<MariaDBTable> targetTables = new ArrayList<>();
@@ -76,7 +71,39 @@ public class MariaDBExpressionGenerator
         return this;
     }
 
-    private enum ExpressionType {
+    //Tang: add parameter-aware generation
+    private ExpressionType selectAction(){
+        if(BaseConfigurationGenerator.isTrainingPhase){
+            ExpressionType actions = Randomly.fromOptions(ExpressionType.values());
+            featureSet.add(actions);
+            return actions;
+        } else {
+            double random = Randomly.getPercentage();
+            double cumulativeProbability = 0.0;
+
+            for(ExpressionType action : ExpressionType.values()) {
+
+                cumulativeProbability += ParameteraAwareGenerator.comActionProbabilities[action.ordinal()];
+
+                if (random <= cumulativeProbability) {
+                    return action;
+                }
+            }
+            return Randomly.fromOptions(ExpressionType.values());
+        }
+    }
+
+    @Override
+    public MariaDBExpression negatePredicate(MariaDBExpression predicate) {
+        return new MariaDBUnaryPrefixOperation(predicate, MariaDBUnaryPrefixOperation.MariaDBUnaryPrefixOperator.NOT);
+    }
+
+    @Override
+    public MariaDBExpression isNull(MariaDBExpression expr) {
+        return new MariaDBPostfixUnaryOperation(MariaDBPostfixUnaryOperation.MariaDBPostfixUnaryOperator.IS_NULL,expr );
+    }
+
+    public enum ExpressionType implements ExpressionAction {
         LITERAL, COLUMN, BINARY_COMPARISON, UNARY_POSTFIX_OPERATOR, UNARY_PREFIX_OPERATOR, FUNCTION, IN
     }
 
@@ -92,8 +119,8 @@ public class MariaDBExpressionGenerator
         if (columns.isEmpty()) {
             expressionTypes.remove(ExpressionType.COLUMN);
         }
-        ExpressionType expressionType = Randomly.fromList(expressionTypes);
-        switch (expressionType) {
+        //ExpressionType expressionType = Randomly.fromList(expressionTypes);
+        switch (selectAction()) {
         case COLUMN:
             getRandomColumn();
         case LITERAL:
@@ -114,7 +141,7 @@ public class MariaDBExpressionGenerator
             return new MariaDBInOperation(getRandomExpression(depth + 1), getSmallNumberRandomExpressions(depth + 1),
                     Randomly.getBoolean());
         default:
-            throw new AssertionError(expressionType);
+            throw new AssertionError();
         }
     }
 
@@ -163,6 +190,26 @@ public class MariaDBExpressionGenerator
             tableRefs.add(tableRef);
         }
         return tableRefs;
+    }
+
+    @Override
+    public List<MariaDBExpression> generateFetchColumns(boolean shouldCreateDummy) {
+        return columns.stream().map(c -> new MariaDBColumnName(c)).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<MariaDBExpression> generateOrderBys() {
+        List<MariaDBExpression> expressions =  getSmallNumberRandomExpressions(Randomly.smallNumber()%3+1);
+        List<MariaDBExpression> newOrderBys = new ArrayList<>();
+        for (MariaDBExpression expr : expressions) {
+            if (Randomly.getBoolean()) {
+                MariaDBOrderByTerm newExpr = new MariaDBOrderByTerm(expr, MariaDBOrderByTerm.MariaDBOrder.getRandomOrder());
+                newOrderBys.add(newExpr);
+            } else {
+                newOrderBys.add(expr);
+            }
+        }
+        return newOrderBys;
     }
 
     @Override
