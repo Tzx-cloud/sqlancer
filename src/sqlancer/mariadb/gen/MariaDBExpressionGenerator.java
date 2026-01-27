@@ -73,15 +73,19 @@ public class MariaDBExpressionGenerator
 
     //Tang: add parameter-aware generation
     private ExpressionType selectAction(){
+        List<ExpressionType> expressionTypes = new ArrayList<>(Arrays.asList(ExpressionType.values()));
+        if (columns.isEmpty()) {
+            expressionTypes.remove(ExpressionType.COLUMN);
+        }
         if(BaseConfigurationGenerator.isTrainingPhase){
-            ExpressionType actions = Randomly.fromOptions(ExpressionType.values());
+            ExpressionType actions = Randomly.fromList(expressionTypes);
             featureSet.add(actions);
             return actions;
         } else {
             double random = Randomly.getPercentage();
             double cumulativeProbability = 0.0;
 
-            for(ExpressionType action : ExpressionType.values()) {
+            for(ExpressionType action : expressionTypes) {
 
                 cumulativeProbability += ParameteraAwareGenerator.comActionProbabilities[action.ordinal()];
 
@@ -104,21 +108,18 @@ public class MariaDBExpressionGenerator
     }
 
     public enum ExpressionType implements ExpressionAction {
-        LITERAL, COLUMN, BINARY_COMPARISON, UNARY_POSTFIX_OPERATOR, UNARY_PREFIX_OPERATOR, FUNCTION, IN
+        COLUMN,LITERAL, BINARY_COMPARISON, UNARY_PREFIX_OPERATOR, UNARY_POSTFIX_OPERATOR, FUNCTION, IN
     }
 
     public MariaDBExpression getRandomExpression(int depth) {
-        if (depth >= MariaDBProvider.MAX_EXPRESSION_DEPTH || Randomly.getBoolean()) {
+        if (depth >= MariaDBProvider.MAX_EXPRESSION_DEPTH || Randomly.getBooleanWithRatherLowProbability()) {
             if (Randomly.getBoolean() || columns.isEmpty()) {
                 return getRandomConstant(r);
             } else {
                 return getRandomColumn();
             }
         }
-        List<ExpressionType> expressionTypes = new ArrayList<>(Arrays.asList(ExpressionType.values()));
-        if (columns.isEmpty()) {
-            expressionTypes.remove(ExpressionType.COLUMN);
-        }
+
         //ExpressionType expressionType = Randomly.fromList(expressionTypes);
         switch (selectAction()) {
         case COLUMN:

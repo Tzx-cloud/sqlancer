@@ -1,6 +1,7 @@
 package sqlancer;
 
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -92,6 +93,9 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
         }
         finally {
             globalState.setSchema(null);
+            try (Statement s = ((SQLConnection)(globalState.getConnection())).createStatement()) {
+                s.execute("DROP DATABASE IF EXISTS " + globalState.getDatabaseName());
+            }
             globalState.getConnection().close();
         }
         return null;
@@ -133,11 +137,15 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
                     }
                 }
             }
-            generateDefaultConfiguration(globalState, action);
+
         }finally {
+            generateDefaultConfiguration(globalState, action);
             double[] featureProbabilities = parameterAwareGenerator.getFeatureProbabilities();
             BaseConfigurationGenerator.parameterFeatureProbabilities.putIfAbsent(action, featureProbabilities.clone());
             globalState.setSchema(null);
+            try (Statement s = ((SQLConnection)(globalState.getConnection())).createStatement()) {
+                s.execute("DROP DATABASE IF EXISTS " + globalState.getDatabaseName());
+            }
             globalState.getConnection().close();
         }
 

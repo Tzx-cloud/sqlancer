@@ -18,40 +18,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.auto.service.AutoService;
 
-import sqlancer.AbstractAction;
-import sqlancer.DatabaseProvider;
-import sqlancer.IgnoreMeException;
-import sqlancer.MainOptions;
-import sqlancer.Randomly;
-import sqlancer.SQLConnection;
-import sqlancer.SQLProviderAdapter;
-import sqlancer.StatementExecutor;
+import sqlancer.*;
 import sqlancer.common.DBMSCommon;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.common.query.SQLQueryProvider;
 import sqlancer.common.query.SQLancerResultSet;
-import sqlancer.postgres.gen.PostgresAlterTableGenerator;
-import sqlancer.postgres.gen.PostgresAnalyzeGenerator;
-import sqlancer.postgres.gen.PostgresClusterGenerator;
-import sqlancer.postgres.gen.PostgresCommentGenerator;
-import sqlancer.postgres.gen.PostgresDeleteGenerator;
-import sqlancer.postgres.gen.PostgresDiscardGenerator;
-import sqlancer.postgres.gen.PostgresDropIndexGenerator;
-import sqlancer.postgres.gen.PostgresExplainGenerator;
-import sqlancer.postgres.gen.PostgresIndexGenerator;
-import sqlancer.postgres.gen.PostgresInsertGenerator;
-import sqlancer.postgres.gen.PostgresNotifyGenerator;
-import sqlancer.postgres.gen.PostgresReindexGenerator;
-import sqlancer.postgres.gen.PostgresSequenceGenerator;
-import sqlancer.postgres.gen.PostgresSetGenerator;
-import sqlancer.postgres.gen.PostgresStatisticsGenerator;
-import sqlancer.postgres.gen.PostgresTableGenerator;
-import sqlancer.postgres.gen.PostgresTableSpaceGenerator;
-import sqlancer.postgres.gen.PostgresTransactionGenerator;
-import sqlancer.postgres.gen.PostgresTruncateGenerator;
-import sqlancer.postgres.gen.PostgresUpdateGenerator;
-import sqlancer.postgres.gen.PostgresVacuumGenerator;
-import sqlancer.postgres.gen.PostgresViewGenerator;
+import sqlancer.mariadb.gen.MariaDBExpressionGenerator;
+import sqlancer.postgres.gen.*;
 
 // EXISTS
 // IN
@@ -390,6 +363,35 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
     @Override
     public String getDBMSName() {
         return "postgres";
+    }
+
+    @Override
+    public Class<? extends ExpressionAction> getActionClass() {
+        // 确保 MySQLExpressionGenerator.Actions 是 public 的
+        return PostgresExpressionGenerator.BooleanExpression.class;
+    }
+
+
+    @Override
+    public void generateConfiguration(PostgresGlobalState globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception {
+        boolean success;
+        int nrTries = 0;
+        do {
+            SQLQueryAdapter config = globalState.getConfigurationGenerator().generateConfigForParameter(action);
+            success =  globalState.executeStatement( config);
+            System.out.println(config.getQueryString());
+        } while (!success && nrTries++ < 100);
+    }
+
+    @Override
+    public void generateDefaultConfiguration(PostgresGlobalState globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception {
+        boolean success;
+        int nrTries = 0;
+        do {
+            SQLQueryAdapter config = globalState.getConfigurationGenerator().generateDefaultConfigForParameter(action);
+            success =  globalState.executeStatement( config);
+            System.out.println(config.getQueryString());
+        } while (!success && nrTries++ < 100);
     }
 
     @Override

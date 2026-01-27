@@ -177,7 +177,108 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         return result;
     }
     private enum Action implements ConfigurationAction{
-       INNODB_BUFFER_POOL_SIZE("innodb_buffer_pool_size", (r) -> r.getLongWithBoundaryBias(5242880, Long.MAX_VALUE), Scope.GLOBAL), //
+        ACTIVATE_ALL_ROLES_ON_LOGIN("activate_all_roles_on_login", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        //        ADMIN_SSL_CA("admin_ssl_ca", (r) -> r.getString(), Scope.GLOBAL), //
+//        ADMIN_SSL_CAPATH("admin_ssl_capath", (r) -> r.getString(), Scope.GLOBAL), //
+//        ADMIN_SSL_CERT("admin_ssl_cert", (r) -> r.getString(), Scope.GLOBAL), //
+        //ADMIN_SSL_CIPHER("admin_ssl_cipher", (r) -> r.getString(), Scope.GLOBAL), //
+        //ADMIN_SSL_CRL("admin_ssl_crl", (r) -> r.getString(), Scope.GLOBAL), //
+//        ADMIN_SSL_CRLPATH("admin_ssl_crlpath", (r) -> r.getString(), Scope.GLOBAL), //
+//        ADMIN_SSL_KEY("admin_ssl_key", (r) -> r.getString(), Scope.GLOBAL), //
+        ADMIN_TLS_CIPHERSUITES("admin_tls_ciphersuites", (r) -> Randomly.fromOptions("TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384","TLS_CHACHA20_POLY1305_SHA256"), Scope.GLOBAL), //
+        ADMIN_TLS_VERSION("admin_tls_version", (r) -> Randomly.fromOptions("'TLSv1.2'", "'TLSv1.3'"), Scope.GLOBAL), //
+        //AUTHENTICATION_POLICY("authentication_policy", (r) -> r.getString(), Scope.GLOBAL), //
+        AUTOCOMMIT("autocommit", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
+        AUTOMATIC_SP_PRIVILEGES("automatic_sp_privileges", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        AUTO_INCREMENT_INCREMENT("auto_increment_increment", (r) -> r.getLongWithBoundaryBias(1, 65535), Scope.GLOBAL, Scope.SESSION), //
+        AUTO_INCREMENT_OFFSET("auto_increment_offset", (r) -> r.getLongWithBoundaryBias(1, 65535), Scope.GLOBAL, Scope.SESSION), //
+        BIG_TABLES("big_tables", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
+        BINLOG_CACHE_SIZE("binlog_cache_size", (r) -> r.getLongWithBoundaryBias(4096, Long.MAX_VALUE), Scope.GLOBAL), //
+        BINLOG_CHECKSUM("binlog_checksum", (r) -> Randomly.fromOptions("NONE", "CRC32"), Scope.GLOBAL), //
+        BINLOG_DIRECT_NON_TRANSACTIONAL_UPDATES("binlog_direct_non_transactional_updates", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
+        // BINLOG_ENCRYPTION("binlog_encryption", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        BINLOG_ERROR_ACTION("binlog_error_action", (r) -> Randomly.fromOptions("IGNORE_ERROR", "ABORT_SERVER"), Scope.GLOBAL), //
+        BINLOG_EXPIRE_LOGS_AUTO_PURGE("binlog_expire_logs_auto_purge", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        BINLOG_EXPIRE_LOGS_SECONDS("binlog_expire_logs_seconds", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
+        BINLOG_FORMAT("binlog_format", (r) -> Randomly.fromOptions("ROW", "STATEMENT", "MIXED"), Scope.GLOBAL, Scope.SESSION), //
+        BINLOG_GROUP_COMMIT_SYNC_DELAY("binlog_group_commit_sync_delay", (r) -> r.getLongWithBoundaryBias(0, 1000000), Scope.GLOBAL), //
+        BINLOG_GROUP_COMMIT_SYNC_NO_DELAY_COUNT("binlog_group_commit_sync_no_delay_count", (r) -> r.getLongWithBoundaryBias(0, 1000000), Scope.GLOBAL), //
+        BINLOG_MAX_FLUSH_QUEUE_TIME("binlog_max_flush_queue_time", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
+        BINLOG_ORDER_COMMITS("binlog_order_commits", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        BINLOG_ROWS_QUERY_LOG_EVENTS("binlog_rows_query_log_events", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
+        BINLOG_ROW_IMAGE("binlog_row_image", (r) -> Randomly.fromOptions("FULL", "MINIMAL", "NOBLOB"), Scope.GLOBAL, Scope.SESSION), //
+        BINLOG_ROW_METADATA("binlog_row_metadata", (r) -> Randomly.fromOptions("MINIMAL", "FULL"), Scope.GLOBAL), //
+        BINLOG_ROW_VALUE_OPTIONS("binlog_row_value_options", (r) -> Randomly.fromOptions("PARTIAL_JSON"), Scope.GLOBAL, Scope.SESSION), //
+        BINLOG_STMT_CACHE_SIZE("binlog_stmt_cache_size", (r) -> r.getLongWithBoundaryBias(4096, Long.MAX_VALUE), Scope.GLOBAL), //
+        BINLOG_TRANSACTION_COMPRESSION("binlog_transaction_compression", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
+        BINLOG_TRANSACTION_COMPRESSION_LEVEL_ZSTD("binlog_transaction_compression_level_zstd", (r) -> r.getLongWithBoundaryBias(1, 22), Scope.GLOBAL, Scope.SESSION), //
+        BINLOG_TRANSACTION_DEPENDENCY_HISTORY_SIZE("binlog_transaction_dependency_history_size", (r) -> r.getLongWithBoundaryBias(0, 1000000), Scope.GLOBAL), //
+        BLOCK_ENCRYPTION_MODE("block_encryption_mode", (r) -> Randomly.fromOptions("'aes-128-ecb'", "'aes-256-cbc'"), Scope.GLOBAL, Scope.SESSION), //
+        BULK_INSERT_BUFFER_SIZE("bulk_insert_buffer_size", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
+        //        CHARACTER_SET_CLIENT("character_set_client", (r) -> r.getString(), Scope.GLOBAL, Scope.SESSION), //
+//        CHARACTER_SET_CONNECTION("character_set_connection", (r) -> r.getString(), Scope.GLOBAL, Scope.SESSION), //
+//        CHARACTER_SET_DATABASE("character_set_database", (r) -> r.getString(), Scope.GLOBAL, Scope.SESSION), //
+        CHARACTER_SET_FILESYSTEM("character_set_filesystem", (r) -> Randomly.fromOptions("utf8mb4", "binary", "latin1"), Scope.GLOBAL, Scope.SESSION), //
+        //        CHARACTER_SET_RESULTS("character_set_results", (r) -> r.getString(), Scope.GLOBAL, Scope.SESSION), //
+//        CHARACTER_SET_SERVER("character_set_server", (r) -> r.getString(), Scope.GLOBAL, Scope.SESSION), //
+        CHECK_PROXY_USERS("check_proxy_users", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        //CLONE_DDL_TIMEOUT("clone_ddl_timeout", (r) -> r.getLongWithBoundaryBias(0, 3600), Scope.GLOBAL), //
+        // CLONE_DONOR_TIMEOUT_AFTER_NETWORK_FAILURE("clone_donor_timeout_after_network_failure", (r) -> r.getLongWithBoundaryBias(0, 30), Scope.GLOBAL), //
+//        COLLATION_CONNECTION("collation_connection", (r) -> r.getString(), Scope.GLOBAL, Scope.SESSION), //
+//        COLLATION_SERVER("collation_server", (r) -> r.getString(), Scope.GLOBAL, Scope.SESSION), //
+        COMPLETION_TYPE("completion_type", (r) -> Randomly.fromOptions("'NO_CHAIN'", "'CHAIN'", "'RELEASE'", "0", "1", "2"), Scope.GLOBAL, Scope.SESSION), //
+        CONNECTION_MEMORY_CHUNK_SIZE("connection_memory_chunk_size", (r) -> r.getLongWithBoundaryBias(1024, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
+        CONNECTION_MEMORY_LIMIT("connection_memory_limit", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
+        CONNECT_TIMEOUT("connect_timeout", (r) -> r.getLongWithBoundaryBias(2, 31536000), Scope.GLOBAL), //
+        CTE_MAX_RECURSION_DEPTH("cte_max_recursion_depth", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL, Scope.SESSION), //
+        //        DEBUG("debug", (r) -> r.getString(), Scope.GLOBAL, Scope.SESSION), //
+        DEBUG_SYNC("debug_sync", (r) -> Randomly.fromOptions("ON", "OFF"), Scope.SESSION), //
+        DEFAULT_COLLATION_FOR_UTF8MB4("default_collation_for_utf8mb4", (r) -> Randomly.fromOptions("utf8mb4_0900_ai_ci", "utf8mb4_general_ci"), Scope.GLOBAL, Scope.SESSION), //
+        DEFAULT_PASSWORD_LIFETIME("default_password_lifetime", (r) -> r.getLongWithBoundaryBias(0, 32767), Scope.GLOBAL), //
+        DEFAULT_TABLE_ENCRYPTION("default_table_encryption", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        DEFAULT_WEEK_FORMAT("default_week_format", (r) -> r.getLongWithBoundaryBias(0, 7), Scope.GLOBAL, Scope.SESSION), //
+        DELAYED_INSERT_LIMIT("delayed_insert_limit", (r) -> r.getLongWithBoundaryBias(1, Long.MAX_VALUE), Scope.GLOBAL), //
+        DELAYED_INSERT_TIMEOUT("delayed_insert_timeout", (r) -> r.getLongWithBoundaryBias(1, 31536000), Scope.GLOBAL), //
+        DELAYED_QUEUE_SIZE("delayed_queue_size", (r) -> r.getLongWithBoundaryBias(1, Long.MAX_VALUE), Scope.GLOBAL), //
+        DELAY_KEY_WRITE("delay_key_write", (r) -> Randomly.fromOptions("ON", "OFF", "ALL"), Scope.GLOBAL), //
+        DIV_PRECISION_INCREMENT("div_precision_increment", (r) -> r.getLongWithBoundaryBias(0, 30), Scope.GLOBAL, Scope.SESSION), //
+        END_MARKERS_IN_JSON("end_markers_in_json", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
+        ENFORCE_GTID_CONSISTENCY("enforce_gtid_consistency", (r) -> Randomly.fromOptions("OFF", "ON", "WARN"), Scope.GLOBAL), //
+        EQ_RANGE_INDEX_DIVE_LIMIT("eq_range_index_dive_limit", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL, Scope.SESSION), //
+        EVENT_SCHEDULER("event_scheduler", (r) -> Randomly.fromOptions("ON", "OFF"), Scope.GLOBAL), //
+        EXPLAIN_FORMAT("explain_format", (r) -> Randomly.fromOptions("TRADITIONAL", "JSON", "TREE"), Scope.GLOBAL, Scope.SESSION), //
+        EXPLICIT_DEFAULTS_FOR_TIMESTAMP("explicit_defaults_for_timestamp", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        FLUSH("flush", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        FLUSH_TIME("flush_time", (r) -> r.getLongWithBoundaryBias(0, 31536000), Scope.GLOBAL), //
+        FOREIGN_KEY_CHECKS("foreign_key_checks", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
+        FT_BOOLEAN_SYNTAX("ft_boolean_syntax", (r) -> Randomly.fromOptions("'+ -><()~*:\"\"&|'"), Scope.GLOBAL), //
+        GENERAL_LOG("general_log", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        //        GENERAL_LOG_FILE("general_log_file", (r) -> r.getString(), Scope.GLOBAL), //
+        GENERATED_RANDOM_PASSWORD_LENGTH("generated_random_password_length", (r) -> r.getLongWithBoundaryBias(5, 255), Scope.GLOBAL), //
+        GLOBAL_CONNECTION_MEMORY_LIMIT("global_connection_memory_limit", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL), //
+        GLOBAL_CONNECTION_MEMORY_TRACKING("global_connection_memory_tracking", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        GROUP_CONCAT_MAX_LEN("group_concat_max_len", (r) -> r.getLongWithBoundaryBias(4, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
+        GROUP_REPLICATION_CONSISTENCY("group_replication_consistency", (r) -> Randomly.fromOptions("'EVENTUAL'", "'BEFORE_ON_PRIMARY_FAILOVER'", "'BEFORE'", "'AFTER'", "'BEFORE_AND_AFTER'"), Scope.GLOBAL, Scope.SESSION), //
+        //        GROUP_REPLICATION_VIEW_CHANGE_UUID("group_replication_view_change_uuid", (r) -> r.getString(), Scope.GLOBAL), //
+        GTID_EXECUTED_COMPRESSION_PERIOD("gtid_executed_compression_period", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
+        //GTID_MODE("gtid_mode", (r) -> Randomly.fromOptions("OFF", "OFF_PERMISSIVE", "ON_PERMISSIVE", "ON"), Scope.GLOBAL), //
+        //GTID_NEXT("gtid_next", (r) -> Randomly.fromOptions("AUTOMATIC", "ANONYMOUS"), Scope.SESSION), //
+//        GTID_PURGED("gtid_purged", (r) -> r.getString(), Scope.GLOBAL), //
+        HISTOGRAM_GENERATION_MAX_MEM_SIZE("histogram_generation_max_mem_size", (r) -> r.getLongWithBoundaryBias(1000000, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
+        HOST_CACHE_SIZE("host_cache_size", (r) -> r.getLongWithBoundaryBias(0, 65536), Scope.GLOBAL), //
+        //IDENTITY("identity", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.SESSION), //
+        IMMEDIATE_SERVER_VERSION("immediate_server_version", (r) -> r.getLongWithBoundaryBias(0, 999999), Scope.SESSION), //
+        INFORMATION_SCHEMA_STATS_EXPIRY("information_schema_stats_expiry", (r) -> r.getLongWithBoundaryBias(0, 31536000), Scope.GLOBAL, Scope.SESSION), //
+        //        INIT_CONNECT("init_connect", (r) -> r.getString(), Scope.GLOBAL), //
+//        INIT_REPLICA("init_replica", (r) -> r.getString(), Scope.GLOBAL), //
+//        INIT_SLAVE("init_slave", (r) -> r.getString(), Scope.GLOBAL), //
+        INNODB_ADAPTIVE_FLUSHING("innodb_adaptive_flushing", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        INNODB_ADAPTIVE_FLUSHING_LWM("innodb_adaptive_flushing_lwm", (r) -> r.getLongWithBoundaryBias(0, 70), Scope.GLOBAL), //
+        INNODB_ADAPTIVE_MAX_SLEEP_DELAY("innodb_adaptive_max_sleep_delay", (r) -> r.getLongWithBoundaryBias(0, 1000000), Scope.GLOBAL), //
+        INNODB_BUFFER_POOL_DUMP_AT_SHUTDOWN("innodb_buffer_pool_dump_at_shutdown", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        INNODB_BUFFER_POOL_DUMP_PCT("innodb_buffer_pool_dump_pct", (r) -> r.getLongWithBoundaryBias(1, 100), Scope.GLOBAL), //
+        INNODB_BUFFER_POOL_IN_CORE_FILE("innodb_buffer_pool_in_core_file", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        INNODB_BUFFER_POOL_SIZE("innodb_buffer_pool_size", (r) -> r.getLongWithBoundaryBias(5242880, Long.MAX_VALUE), Scope.GLOBAL), //
         INNODB_CHANGE_BUFFERING("innodb_change_buffering", (r) -> Randomly.fromOptions("none", "inserts", "deletes", "changes", "purges", "all"), Scope.GLOBAL), //
         INNODB_CHANGE_BUFFER_MAX_SIZE("innodb_change_buffer_max_size", (r) -> r.getLongWithBoundaryBias(0, 50), Scope.GLOBAL), //
         INNODB_CHECKPOINT_DISABLED("innodb_checkpoint_disabled", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
@@ -321,7 +422,7 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         MIN_EXAMINED_ROW_LIMIT("min_examined_row_limit", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
         MYSQL_NATIVE_PASSWORD_PROXY_USERS("mysql_native_password_proxy_users", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
         //NDBINFO_OFFLINE("ndbinfo_offline", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-       // NDB_BLOB_WRITE_BATCH_BYTES("ndb_blob_write_batch_bytes", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
+        // NDB_BLOB_WRITE_BATCH_BYTES("ndb_blob_write_batch_bytes", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
         //NDB_CLEAR_APPLY_STATUS("ndb_clear_apply_status", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
         //NDB_CONFLICT_ROLE("ndb_conflict_role", (r) -> Randomly.fromOptions("'NONE'", "'PRIMARY'", "'SECONDARY'", "'PASS'"), Scope.GLOBAL), //
         //NDB_DATA_NODE_NEIGHBOUR("ndb_data_node_neighbour", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
@@ -384,7 +485,7 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         PSEUDO_THREAD_ID("pseudo_thread_id", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.SESSION), //
         QUERY_ALLOC_BLOCK_SIZE("query_alloc_block_size", (r) -> r.getLongWithBoundaryBias(1024, 4294967295L), Scope.GLOBAL, Scope.SESSION), //
         QUERY_PREALLOC_SIZE("query_prealloc_size", (r) -> r.getLongWithBoundaryBias(8192, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
-//        RAND_SEED1("rand_seed1", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.SESSION), //
+        //        RAND_SEED1("rand_seed1", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.SESSION), //
 //        RAND_SEED2("rand_seed2", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.SESSION), //
         RANGE_ALLOC_BLOCK_SIZE("range_alloc_block_size", (r) -> r.getLongWithBoundaryBias(4096, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
         RANGE_OPTIMIZER_MAX_MEM_SIZE("range_optimizer_max_mem_size", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
@@ -457,22 +558,26 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         SQL_GENERATE_INVISIBLE_PRIMARY_KEY("sql_generate_invisible_primary_key", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
         SQL_LOG_BIN("sql_log_bin", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.SESSION), //
         SQL_LOG_OFF("sql_log_off", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.SESSION), //
-        SQL_MODE("sql_mode", (r) -> Randomly.fromOptions(
-                "ANSI_QUOTES", "ERROR_FOR_DIVISION_BY_ZERO",
-                "HIGH_NOT_PRECEDENCE",
-                "IGNORE_SPACE",
-                "NO_AUTO_VALUE_ON_ZERO",
-                "NO_BACKSLASH_ESCAPES",
-                "NO_DIR_IN_CREATE",
-                "NO_ENGINE_SUBSTITUTION",
-                "NO_UNSIGNED_SUBTRACTION",
-                "ONLY_FULL_GROUP_BY",
-                "PAD_CHAR_TO_FULL_LENGTH",
-                "PIPES_AS_CONCAT",
-                "REAL_AS_FLOAT",
-                "STRICT_ALL_TABLES",
-                "STRICT_TRANS_TABLES",
-                "TIME_TRUNCATE_FRACTIONAL"), Scope.GLOBAL, Scope.SESSION), //
+        SQL_MODE("sql_mode", (r) -> {
+            List<String> modes = Arrays.asList(
+                    "ANSI_QUOTES", "ERROR_FOR_DIVISION_BY_ZERO",
+                    "HIGH_NOT_PRECEDENCE",
+                    "IGNORE_SPACE",
+                    "NO_AUTO_VALUE_ON_ZERO",
+                    "NO_BACKSLASH_ESCAPES",
+                    "NO_DIR_IN_CREATE",
+                    "NO_ENGINE_SUBSTITUTION",
+                    "NO_UNSIGNED_SUBTRACTION",
+                    "ONLY_FULL_GROUP_BY",
+                    "PAD_CHAR_TO_FULL_LENGTH",
+                    "PIPES_AS_CONCAT",
+                    "REAL_AS_FLOAT",
+                    "STRICT_ALL_TABLES",
+                    "STRICT_TRANS_TABLES",
+                    "TIME_TRUNCATE_FRACTIONAL"
+            );
+            return "'"+String.join(",", Randomly.nonEmptySubset(modes))+"'";
+        }, Scope.GLOBAL, Scope.SESSION), //
         SQL_NOTES("sql_notes", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
         SQL_QUOTE_SHOW_CREATE("sql_quote_show_create", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
         SQL_REPLICA_SKIP_COUNTER("sql_replica_skip_counter", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //

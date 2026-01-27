@@ -483,6 +483,25 @@ public final class Randomly {
         return getNextLong(left, right);
     }
 
+    public double getDoubleWithBoundaryBias(double left, double right) {
+        if (left > right) {
+            throw new IllegalArgumentException("left must be less than or equal to right");
+        }
+        if (left == right) {
+            return left;
+        }
+
+        // 20% 的概率返回 left，20% 的概率返回 right
+        int bias = getNextInt(0, 10);
+        if (bias <2) {
+            return left;
+        } else if (bias >7) {
+            return right;
+        }
+
+        return left + (right - left) *getPercentage();
+    }
+
     public BigInteger getBigInteger(BigInteger left, BigInteger right) {
         if (left.equals(right)) {
             return left;

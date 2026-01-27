@@ -150,8 +150,8 @@ public class PostgresExpressionGenerator implements ExpressionGenerator<Postgres
         }
     }
 
-    private enum BooleanExpression implements ExpressionAction {
-        POSTFIX_OPERATOR, NOT, BINARY_LOGICAL_OPERATOR, BINARY_COMPARISON, FUNCTION, CAST, LIKE, BETWEEN, IN_OPERATION,
+    public enum BooleanExpression implements ExpressionAction {
+        POSTFIX_OPERATOR, IN_OPERATION, NOT, BINARY_LOGICAL_OPERATOR, BINARY_COMPARISON, CAST, FUNCTION, LIKE, BETWEEN,
         SIMILAR_TO, POSIX_REGEX, BINARY_RANGE_COMPARISON;
     }
 
@@ -200,7 +200,7 @@ public class PostgresExpressionGenerator implements ExpressionGenerator<Postgres
             validOptions.remove(BooleanExpression.POSIX_REGEX);
             validOptions.remove(BooleanExpression.BINARY_RANGE_COMPARISON);
         }
-        BooleanExpression option = Randomly.fromList(validOptions);
+        //BooleanExpression option = Randomly.fromList(validOptions);
         switch (selectAction()) {
         case POSTFIX_OPERATOR:
             PostfixOperator random = PostfixOperator.getRandom();

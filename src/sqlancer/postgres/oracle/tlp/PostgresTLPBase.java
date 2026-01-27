@@ -6,10 +6,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
+import sqlancer.common.ast.newast.Select;
 import sqlancer.common.gen.ExpressionGenerator;
 import sqlancer.common.oracle.TernaryLogicPartitioningOracleBase;
 import sqlancer.common.oracle.TestOracle;
+import sqlancer.common.oracle.TestOracleUtils;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.common.query.SQLancerResultSet;
+import sqlancer.common.schema.AbstractTables;
 import sqlancer.postgres.PostgresGlobalState;
 import sqlancer.postgres.PostgresSchema;
 import sqlancer.postgres.PostgresSchema.PostgresColumn;
@@ -50,6 +56,8 @@ public class PostgresTLPBase extends TernaryLogicPartitioningOracleBase<Postgres
         List<PostgresJoin> joins = getJoinStatements(state, targetTables.getColumns(), tables);
         generateSelectBase(tables, joins);
     }
+
+
 
     protected List<PostgresJoin> getJoinStatements(PostgresGlobalState globalState, List<PostgresColumn> columns,
             List<PostgresTable> tables) {

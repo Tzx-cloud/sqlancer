@@ -790,7 +790,7 @@ public final class Main {
         } finally {
             BaseConfigurationGenerator.isTrainingPhase=false;
             try {
-                if (options.logEachSelect()) {
+                if (options.logEachSelect()&&executor.getLogger()!=null) {
                     if (executor.getLogger().currentFileWriter != null) {
                         executor.getLogger().currentFileWriter.close();
                     }

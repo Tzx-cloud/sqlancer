@@ -14,6 +14,7 @@ import sqlancer.common.DBMSCommon;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mariadb.MariaDBProvider.MariaDBGlobalState;
 import sqlancer.mariadb.gen.*;
+import sqlancer.mysql.MySQLGlobalState;
 import sqlancer.mysql.gen.MySQLExpressionGenerator;
 
 @AutoService(DatabaseProvider.class)
@@ -203,4 +204,25 @@ public class MariaDBProvider extends SQLProviderAdapter<MariaDBGlobalState, Mari
         return "mariadb";
     }
 
+    @Override
+    public void generateConfiguration(MariaDBGlobalState globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception {
+        boolean success;
+        int nrTries = 0;
+        do {
+            SQLQueryAdapter config = globalState.getConfigurationGenerator().generateConfigForParameter(action);
+            success =  globalState.executeStatement( config);
+            System.out.println(config.getQueryString());
+        } while (!success && nrTries++ < 100);
+    }
+
+    @Override
+    public void generateDefaultConfiguration(MariaDBGlobalState globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception {
+        boolean success;
+        int nrTries = 0;
+        do {
+            SQLQueryAdapter config = globalState.getConfigurationGenerator().generateDefaultConfigForParameter(action);
+            success =  globalState.executeStatement( config);
+            System.out.println(config.getQueryString());
+        } while (!success && nrTries++ < 100);
+    }
 }
