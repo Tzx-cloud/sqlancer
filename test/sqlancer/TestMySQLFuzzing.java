@@ -12,7 +12,7 @@ public class TestMySQLFuzzing {
 
     @Test
     public void testMySQLFuzzing() throws InterruptedException {
-        String[] args={"mariadb","--oracle","TLP_WHERE"};
+        String[] args={"mysql","--oracle","TLP_WHERE"};
 
         Main.main(args);
         //Main.executeMainOnWeb(args);

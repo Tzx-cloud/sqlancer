@@ -14,12 +14,12 @@ import static sqlancer.BaseConfigurationGenerator.allParameterCombos;
 
 public class AFLMonitor implements AutoCloseable {
     // 常量
-    public static final int MARIADB_MAP_SIZE =  572506;
-    //public static final int AFL_MAP_SIZE = 1533718;
-    public static final int AFL_MAP_SIZE = 572506;
+    public static final int MARIADB_MAP_SIZE =  572507;
+    //public static final int MYSQL_MAP_SIZE = 1533718;
+    public static final int AFL_MAP_SIZE = 1533718;
     private static final String AFL_SHM_ENV_VAR = "__AFL_SHM_ID";
-    private static final String   DBMS_PATH= "/usr/local/mariadb_afl/bin/mariadbd";
-    //private static final String   DBMS_PATH= "/usr/local/mysql/bin/mysqld"; // 请根据实际路径修改
+    //private static final String   DBMS_PATH= "/usr/local/mariadb_afl/bin/mariadbd";
+    private static final String   DBMS_PATH= "/usr/local/mysql/bin/mysqld"; // 请根据实际路径修改
     // SysV IPC 常量
     private static final int IPC_PRIVATE = 0;
     private static final int IPC_CREAT = 01000;

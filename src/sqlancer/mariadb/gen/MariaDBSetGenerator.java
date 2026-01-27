@@ -145,7 +145,7 @@ public class MariaDBSetGenerator extends BaseConfigurationGenerator {
 
     private enum Action implements ConfigurationAction {
 
-        ALTER_ALGORITHM("alter_algorithm", (r) -> Randomly.fromOptions("DEFAULT", "COPY", "INPLACE", "INSTANT", "NOCOPY"), Scope.GLOBAL, Scope.SESSION), //
+        ALTER_ALGORITHM("alter_algorithm", (r) -> Randomly.fromOptions( "COPY", "INPLACE", "INSTANT", "NOCOPY"), Scope.GLOBAL, Scope.SESSION), //
         ANALYZE_SAMPLE_PERCENTAGE("analyze_sample_percentage", (r) -> r.getLongWithBoundaryBias(0, 100), Scope.GLOBAL, Scope.SESSION), //
         AUTOCOMMIT("autocommit", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
         AUTOMATIC_SP_PRIVILEGES("automatic_sp_privileges", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
@@ -181,7 +181,7 @@ public class MariaDBSetGenerator extends BaseConfigurationGenerator {
 //        COLLATION_SERVER("collation_server", (r) -> r.getString(), Scope.GLOBAL, Scope.SESSION), //
         COLUMN_COMPRESSION_THRESHOLD("column_compression_threshold", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL, Scope.SESSION), //
         COLUMN_COMPRESSION_ZLIB_LEVEL("column_compression_zlib_level", (r) -> r.getLongWithBoundaryBias(0, 9), Scope.GLOBAL, Scope.SESSION), //
-        COLUMN_COMPRESSION_ZLIB_STRATEGY("column_compression_zlib_strategy", (r) -> Randomly.fromOptions("DEFAULT_STRATEGY", "FILTERED", "HUFFMAN_ONLY", "RLE", "FIXED"), Scope.GLOBAL, Scope.SESSION), //
+        COLUMN_COMPRESSION_ZLIB_STRATEGY("column_compression_zlib_strategy", (r) -> Randomly.fromOptions( "FILTERED", "HUFFMAN_ONLY", "RLE", "FIXED"), Scope.GLOBAL, Scope.SESSION), //
         COLUMN_COMPRESSION_ZLIB_WRAP("column_compression_zlib_wrap", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
         COMPLETION_TYPE("completion_type", (r) -> Randomly.fromOptions("'NO_CHAIN'", "'CHAIN'", "'RELEASE'"), Scope.GLOBAL, Scope.SESSION), //
         CONCURRENT_INSERT("concurrent_insert", (r) -> Randomly.fromOptions("NEVER", "AUTO", "ALWAYS"), Scope.GLOBAL), //

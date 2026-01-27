@@ -14,7 +14,7 @@ public abstract class BaseConfigurationGenerator  {
 
 
     // 训练相关的静态变量
-    public static Map<ConfigurationAction, double[]> parameterFeatureProbabilities = new HashMap<>(1000);
+    public static Map<ConfigurationAction, double[]>  parameterFeatureProbabilities = new HashMap<>(1000);
     public static Map<Set<ConfigurationAction>, Double> allParameterCombos= new HashMap<>(1000000);
     public static Map<Set<ConfigurationAction>, Double> proParameterCombos= new HashMap<>(1000);
     public static boolean isTrainingPhase = false;
@@ -378,10 +378,6 @@ public abstract class BaseConfigurationGenerator  {
 
         // tieBreaker 用 System.identityHashCode 防止大量相同 weight 时比较器不稳定导致异常
         for (Map.Entry<Set<ConfigurationAction>, Double> e : allParameterCombos.entrySet()) {
-            Set<ConfigurationAction> id = e.getKey();
-            double w = e.getValue() == null ? 0.0 : e.getValue();
-
-
 
             if (minHeap.size() < k) {
                 minHeap.offer(e);

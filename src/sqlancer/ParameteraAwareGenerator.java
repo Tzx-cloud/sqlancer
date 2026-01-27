@@ -28,11 +28,11 @@ public class ParameteraAwareGenerator {
     public static Set<ExpressionAction> featureSet = new java.util.HashSet<>();
     private final ExpressionAction[] actions;
     private int testCounts = 0;
-    private final int[] featureCounts;
+    private final long[] featureCounts;
     //
-    private final int[] edgeCounts = new int[AFLMonitor.AFL_MAP_SIZE];
+    private final long[] edgeCounts = new long[AFLMonitor.AFL_MAP_SIZE];
     // Map<ParameterConfig, Map<GeneratorNode, Map<Edge, Integer>>>
-    private final int[][] featureEdgeCounts;
+    private final long[][] featureEdgeCounts;
     // Map<Edge, Integer>
     private final long[] totalEdgeHitCounts = new long[AFLMonitor.AFL_MAP_SIZE];
     public static double[] comActionProbabilities;
@@ -50,8 +50,8 @@ public class ParameteraAwareGenerator {
             throw new IllegalArgumentException("Action enum class cannot be empty: " + actionClass.getName());
         }
         int numActions = this.actions.length;
-        this.featureCounts = new int[numActions];
-        this.featureEdgeCounts = new int[numActions][AFLMonitor.AFL_MAP_SIZE];
+        this.featureCounts = new long[numActions];
+        this.featureEdgeCounts = new long[numActions][AFLMonitor.AFL_MAP_SIZE];
         comActionProbabilities = new double[numActions];
     }
     /**
@@ -75,18 +75,18 @@ public class ParameteraAwareGenerator {
      */
     private double calculateMutualInformation(int feature, int edge) {
         // 从数组中获取计数
-        int countF1 = featureCounts[feature];
-        int countE1 = edgeCounts[edge];
-        int countF1E1 = featureEdgeCounts[feature][edge];
+        long countF1 = featureCounts[feature];
+        long countE1 = edgeCounts[edge];
+        long countF1E1 = featureEdgeCounts[feature][edge];
 
 
 
         // 计算联合事件和边缘事件的计数
-        int countF0 = testCounts - countF1;
-        int countE0 = testCounts - countE1;
-        int countF1E0 = countF1 - countF1E1;
-        int countF0E1 = countE1 - countF1E1;
-        int countF0E0 = countF0 - countF0E1;
+        long countF0 = testCounts - countF1;
+        long countE0 = testCounts - countE1;
+        long countF1E0 = countF1 - countF1E1;
+        long countF0E1 = countE1 - countF1E1;
+        long countF0E0 = countF0 - countF0E1;
 
         // 如果总测试次数、特征计数或边计数为零，则互信息为零，提前返回
         if (testCounts == 0 || countF1 == 0 || countE1 == 0||countE0==0||countF0==0) {
@@ -136,6 +136,7 @@ public class ParameteraAwareGenerator {
 
             for (int i = 0; i < featureCounts.length; i++) {
                 double mi = calculateMutualInformation(i, j);
+                assert mi>=0:"MI should be non-negative";
                 weights[i] += mi * novelty;
             }
         }
@@ -153,10 +154,10 @@ public class ParameteraAwareGenerator {
         double totalWeightPowered = 0.0;
 
         for (int i=0;i<weights.length;i++) {
-            double weight = weights[i];
-            // Ensure weight is non-negative before applying power
-            double poweredWeight = Math.pow(Math.max(0, weight), ALPHA);
-            totalWeightPowered += poweredWeight;
+//            double weight = weights[i];
+//            // Ensure weight is non-negative before applying power
+//            double poweredWeight = Math.pow(Math.max(0, weight), ALPHA);
+            totalWeightPowered += weights[i];
         }
 
         if (totalWeightPowered == 0) {

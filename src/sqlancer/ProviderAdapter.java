@@ -141,6 +141,7 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
         }finally {
             generateDefaultConfiguration(globalState, action);
             double[] featureProbabilities = parameterAwareGenerator.getFeatureProbabilities();
+            System.out.println(Arrays.toString(featureProbabilities));
             BaseConfigurationGenerator.parameterFeatureProbabilities.putIfAbsent(action, featureProbabilities.clone());
             globalState.setSchema(null);
             try (Statement s = ((SQLConnection)(globalState.getConnection())).createStatement()) {
