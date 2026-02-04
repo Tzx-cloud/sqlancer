@@ -25,6 +25,19 @@ public class PostgresTLPHavingOracle extends PostgresTLPBase {
         havingCheck();
     }
 
+    @Override
+    public void genSelect() throws SQLException {
+        super.check();
+
+        select.setWhereClause(gen.generateExpression(PostgresDataType.BOOLEAN));
+
+        select.setGroupByExpressions(gen.generateExpressions(Randomly.smallNumber() + 1));
+
+        String originalQueryString = PostgresVisitor.asString(select);
+        ComparatorHelper.getResultSetFirstColumnAsString(originalQueryString, errors, state);
+
+    }
+
     protected void havingCheck() throws SQLException {
         if (Randomly.getBoolean()) {
             select.setWhereClause(gen.generateExpression(PostgresDataType.BOOLEAN));

@@ -398,7 +398,7 @@ public class PostgresExpressionGenerator implements ExpressionGenerator<Postgres
 
     }
 
-    private enum RangeExpression {
+    private enum RangeExpression   {
         BINARY_OP;
     }
 
@@ -416,7 +416,7 @@ public class PostgresExpressionGenerator implements ExpressionGenerator<Postgres
         }
     }
 
-    private enum TextExpression {
+    private enum TextExpression   {
         CAST, FUNCTION, CONCAT, COLLATE
     }
 
@@ -513,7 +513,7 @@ public class PostgresExpressionGenerator implements ExpressionGenerator<Postgres
         return new PostgresConcatOperation(left, right);
     }
 
-    private enum BitExpression {
+    private enum BitExpression  {
         BINARY_OPERATION
     };
 

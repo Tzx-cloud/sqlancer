@@ -100,8 +100,8 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         LISTEN((g) -> PostgresNotifyGenerator.createListen()), //
         UNLISTEN((g) -> PostgresNotifyGenerator.createUnlisten()), //
         CREATE_SEQUENCE(PostgresSequenceGenerator::createSequence), //
-        CREATE_VIEW(PostgresViewGenerator::create), //
-        CREATE_TABLESPACE(PostgresTableSpaceGenerator::generate);
+        CREATE_VIEW(PostgresViewGenerator::create); //
+        //CREATE_TABLESPACE(PostgresTableSpaceGenerator::generate);
 
         private final SQLQueryProvider<PostgresGlobalState> sqlQueryProvider;
 
@@ -165,9 +165,9 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         case CREATE_VIEW:
             nrPerformed = r.getInteger(0, 2);
             break;
-        case CREATE_TABLESPACE:
-            nrPerformed = r.getInteger(0, 2);
-            break;
+//        case CREATE_TABLESPACE:
+//            nrPerformed = r.getInteger(0, 2);
+//            break;
         case UPDATE:
             nrPerformed = r.getInteger(0, 10);
             break;
@@ -214,7 +214,7 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         password = globalState.getOptions().getPassword();
         host = globalState.getOptions().getHost();
         port = globalState.getOptions().getPort();
-        entryPath = "/test";
+        entryPath = "/root";
         entryURL = globalState.getDbmsSpecificOptions().connectionURL;
         // trim URL to exclude "jdbc:"
         if (entryURL.startsWith("jdbc:")) {
@@ -260,11 +260,12 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
 
         String dropCommand = "DROP DATABASE";
         boolean forceDrop = Randomly.getBoolean();
-        if (forceDrop) {
-            dropCommand += " FORCE";
-        }
+
         dropCommand += " IF EXISTS " + databaseName;
 
+        if (forceDrop) {
+            dropCommand += " (FORCE)";
+        }
         globalState.getState().logStatement(dropCommand + ";");
         try (Statement s = con.createStatement()) {
             s.execute(dropCommand);

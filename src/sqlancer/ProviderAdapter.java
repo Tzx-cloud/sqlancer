@@ -108,14 +108,17 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
         List<? extends OracleFactory<G>> testOracleFactory = globalState.getDbmsSpecificOptions()
                 .getTestOracleFactory();
         try {
+            System.out.println("prepare generating training database with configuration: " + action);
             generateDatabase(globalState);
             for (int i = 0; i < BaseConfigurationGenerator.TRAINING_SAMPLES; i++) {
+
+                System.out.println("Training sample " + (i + 1) + " / " + BaseConfigurationGenerator.TRAINING_SAMPLES);
                 generateConfiguration(globalState, action);
                 checkViewsAreValid(globalState);
                 globalState.getManager().incrementCreateDatabase();
                 TestOracle<G> testOracle = testOracleFactory.get(0).create(globalState);
                 long startTime = System.currentTimeMillis();
-                long durationMillis = 15000; // 15 秒
+                long durationMillis = 30000; // 15 秒
                 while (System.currentTimeMillis() - startTime < durationMillis) {
                     try (OracleRunReproductionState localState = globalState.getState().createLocalState()) {
                         assert localState != null;
@@ -123,12 +126,15 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
                             globalState.getManager().incrementSelectQueryCount();
                             featureSet.clear();
                             AFLMonitor.getInstance().clearCoverage();
+                            //System.out.println("select"); // reset hashcode
                             testOracle.genSelect();
+                            //System.out.println("out select");
                             AFLMonitor.getInstance().refreshBuffer();
                             parameterAwareGenerator.updateCounts();
 
                             Main.nrSuccessfulActions.addAndGet(1);
                         } catch (IgnoreMeException ignored) {
+                            //System.out.println("out select");
                         } catch (AssertionError e) {
                             e.printStackTrace();
                             throw e;
@@ -139,14 +145,15 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
             }
 
         }finally {
+            System.out.println("prepare generating default configuration for action: " + action);
             generateDefaultConfiguration(globalState, action);
             double[] featureProbabilities = parameterAwareGenerator.getFeatureProbabilities();
             System.out.println(Arrays.toString(featureProbabilities));
             BaseConfigurationGenerator.parameterFeatureProbabilities.putIfAbsent(action, featureProbabilities.clone());
             globalState.setSchema(null);
-            try (Statement s = ((SQLConnection)(globalState.getConnection())).createStatement()) {
-                s.execute("DROP DATABASE IF EXISTS " + globalState.getDatabaseName());
-            }
+//            try (Statement s = ((SQLConnection)(globalState.getConnection())).createStatement()) {
+//                s.execute("DROP DATABASE IF EXISTS " + globalState.getDatabaseName());
+//            }
             globalState.getConnection().close();
         }
 
