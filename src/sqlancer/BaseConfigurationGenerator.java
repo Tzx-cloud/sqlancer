@@ -14,9 +14,9 @@ public abstract class BaseConfigurationGenerator  {
 
 
     // 训练相关的静态变量
-    public static Map<ConfigurationAction, double[]>  parameterFeatureProbabilities = new HashMap<>(1000);
-    public static Map<Set<ConfigurationAction>, Double> allParameterCombos= new HashMap<>(1000000);
-    public static Map<Set<ConfigurationAction>, Double> proParameterCombos= new HashMap<>(1000);
+    public static Map<ConfigurationAction, double[]>  parameterFeatureProbabilities = new HashMap<>(500);
+    public static Map<Set<ConfigurationAction>, Double> allParameterCombos= new HashMap<>(50000);
+    public static Map<Set<ConfigurationAction>, Double> proParameterCombos= new HashMap<>(500);
     public static boolean isTrainingPhase = false;
     public static final int TRAINING_SAMPLES = 4;
     private double weightSum = 0.0;
@@ -210,6 +210,11 @@ public abstract class BaseConfigurationGenerator  {
 
     public interface ConfigurationAction {
         String getName();
+
+        default String getDefaultValue() {
+            return null;
+        }
+
         Object generateValue(Randomly r);
         Scope[] getScopes();
         boolean canBeUsedInScope(Scope scope);
@@ -369,34 +374,61 @@ public abstract class BaseConfigurationGenerator  {
             currentGeneratedActions= selectActionsByWeight();
         }
     }
-    public void topKSnapshot(int k) {
-        // 最小堆：堆顶是当前 Top-K 里最小的那个
-        weightSum=0.0;
-        PriorityQueue<Map.Entry<Set<ConfigurationAction>,Double>> minHeap = new PriorityQueue<>(
-                Comparator.comparingDouble(Map.Entry::getValue)
-        );
 
-        // tieBreaker 用 System.identityHashCode 防止大量相同 weight 时比较器不稳定导致异常
+    public void topKSnapshot( ) {
+        weightSum = 0.0;
+        int k = parameterFeatureProbabilities.size();
+
+        // Phase 1: forced coverage - best partner for each action
+        Map<Set<ConfigurationAction>, Double> pairWeights = new HashMap<>();
         for (Map.Entry<Set<ConfigurationAction>, Double> e : allParameterCombos.entrySet()) {
+            if (e.getKey().size() == 2) {
+                pairWeights.put(e.getKey(), e.getValue());
+            }
+        }
 
-            if (minHeap.size() < k) {
-                minHeap.offer(e);
-            } else if (isBetter(e, minHeap.peek())) {
-                minHeap.poll();
-                minHeap.offer(e);
+        Set<Set<ConfigurationAction>> selected = new LinkedHashSet<>();
+        for (ConfigurationAction action : getAllActions()) {
+            Set<ConfigurationAction> bestPair = null;
+            double bestWeight = Double.NEGATIVE_INFINITY;
+            for (Map.Entry<Set<ConfigurationAction>, Double> e : pairWeights.entrySet()) {
+                if (e.getKey().contains(action) && e.getValue() > bestWeight) {
+                    bestWeight = e.getValue();
+                    bestPair = e.getKey();
+                }
+            }
+            if (bestPair != null) {
+                selected.add(bestPair);
             }
         }
 
 
-        Map<Set<ConfigurationAction>, Double> top = new HashMap<>(minHeap.size());
-        for (Map.Entry<Set<ConfigurationAction>, Double> e : minHeap) {
-            weightSum += e.getValue();
-            top.put(e.getKey(), e.getValue());
+        // Phase 2: greedy fill by weight
+        if (selected.size() < k) {
+            List<Map.Entry<Set<ConfigurationAction>, Double>> remaining = new ArrayList<>();
+            for (Map.Entry<Set<ConfigurationAction>, Double> e : allParameterCombos.entrySet()) {
+                if (!selected.contains(e.getKey())) {
+                    remaining.add(e);
+                }
+            }
+            remaining.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
+            for (Map.Entry<Set<ConfigurationAction>, Double> e : remaining) {
+                if (selected.size() >= k) {
+                    break;
+                }
+                selected.add(e.getKey());
+            }
+        }
+
+        Map<Set<ConfigurationAction>, Double> top = new HashMap<>(selected.size());
+        for (Set<ConfigurationAction> s : selected) {
+            double w = allParameterCombos.getOrDefault(s, 0.0);
+            weightSum += w;
+            top.put(s, w);
         }
 
         proParameterCombos.clear();
         proParameterCombos.putAll(top);
-
     }
 }
 

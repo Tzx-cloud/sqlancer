@@ -3,6 +3,7 @@ package sqlancer.mysql.gen;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -52,18 +53,7 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
 
         // 选择作用域
         Scope[] scopes = action.getScopes();
-        Scope randomScope = Randomly.fromOptions(scopes);
-
-        switch (randomScope) {
-            case GLOBAL:
-                sb.append("GLOBAL");
-                break;
-            case SESSION:
-                sb.append("SESSION");
-                break;
-            default:
-                throw new AssertionError(randomScope);
-        }
+        sb.append(action.getScopes()[0]);
 
         sb.append(" ");
         sb.append(action.getName());
@@ -106,7 +96,7 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
 
     @Override
     public SQLQueryAdapter generateDefaultConfigForParameter(ConfigurationAction action) {
-        if (action.getName()=="optimizer_switch") {
+        if (Objects.equals(action.getName(), "optimizer_switch")) {
             return resetOptimizer();
         }
         StringBuilder sb = new StringBuilder();
@@ -115,8 +105,7 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         // 选择作用域
         Scope[] scopes = action.getScopes();
 
-        if(scopes.length==2||scopes[0]==Scope.GLOBAL )sb.append("GLOBAL");
-        else sb.append("SESSION");
+        sb.append(scopes[0]);
 
         sb.append(" ");
         sb.append(action.getName());
@@ -178,13 +167,6 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
     }
     private enum Action implements ConfigurationAction{
         ACTIVATE_ALL_ROLES_ON_LOGIN("activate_all_roles_on_login", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        //        ADMIN_SSL_CA("admin_ssl_ca", (r) -> r.getString(), Scope.GLOBAL), //
-//        ADMIN_SSL_CAPATH("admin_ssl_capath", (r) -> r.getString(), Scope.GLOBAL), //
-//        ADMIN_SSL_CERT("admin_ssl_cert", (r) -> r.getString(), Scope.GLOBAL), //
-        //ADMIN_SSL_CIPHER("admin_ssl_cipher", (r) -> r.getString(), Scope.GLOBAL), //
-        //ADMIN_SSL_CRL("admin_ssl_crl", (r) -> r.getString(), Scope.GLOBAL), //
-//        ADMIN_SSL_CRLPATH("admin_ssl_crlpath", (r) -> r.getString(), Scope.GLOBAL), //
-//        ADMIN_SSL_KEY("admin_ssl_key", (r) -> r.getString(), Scope.GLOBAL), //
         ADMIN_TLS_CIPHERSUITES("admin_tls_ciphersuites", (r) -> Randomly.fromOptions("TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384","TLS_CHACHA20_POLY1305_SHA256"), Scope.GLOBAL), //
         ADMIN_TLS_VERSION("admin_tls_version", (r) -> Randomly.fromOptions("'TLSv1.2'", "'TLSv1.3'"), Scope.GLOBAL), //
         //AUTHENTICATION_POLICY("authentication_policy", (r) -> r.getString(), Scope.GLOBAL), //
@@ -342,7 +324,7 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         INNODB_RANDOM_READ_AHEAD("innodb_random_read_ahead", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
         INNODB_READ_AHEAD_THRESHOLD("innodb_read_ahead_threshold", (r) -> r.getLongWithBoundaryBias(0, 64), Scope.GLOBAL), //
         INNODB_REDO_LOG_CAPACITY("innodb_redo_log_capacity", (r) -> r.getLongWithBoundaryBias(8388608, 137438953472L), Scope.GLOBAL), //
-        INNODB_REDO_LOG_ENCRYPT("innodb_redo_log_encrypt", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        //INNODB_REDO_LOG_ENCRYPT("innodb_redo_log_encrypt", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
         INNODB_REPLICATION_DELAY("innodb_replication_delay", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
         INNODB_ROLLBACK_SEGMENTS("innodb_rollback_segments", (r) -> r.getLongWithBoundaryBias(1, 128), Scope.GLOBAL), //
         INNODB_SAVED_PAGE_NUMBER_DEBUG("innodb_saved_page_number_debug", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL), //
@@ -356,13 +338,13 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         INNODB_THREAD_CONCURRENCY("innodb_thread_concurrency", (r) -> r.getLongWithBoundaryBias(0, 1000), Scope.GLOBAL), //
         INNODB_THREAD_SLEEP_DELAY("innodb_thread_sleep_delay", (r) -> r.getLongWithBoundaryBias(0, 1000000), Scope.GLOBAL), //
         //INNODB_TMPDIR("innodb_tmpdir", (r) -> r.getString(), Scope.GLOBAL), //
-        INNODB_UNDO_LOG_ENCRYPT("innodb_undo_log_encrypt", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
+        //INNODB_UNDO_LOG_ENCRYPT("innodb_undo_log_encrypt", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
         INNODB_UNDO_LOG_TRUNCATE("innodb_undo_log_truncate", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        INNODB_UNDO_TABLESPACES("innodb_undo_tablespaces", (r) -> r.getLongWithBoundaryBias(0, 127), Scope.GLOBAL), //
+        //INNODB_UNDO_TABLESPACES("innodb_undo_tablespaces", (r) -> r.getLongWithBoundaryBias(0, 127), Scope.GLOBAL), //
         INNODB_USE_FDATASYNC("innodb_use_fdatasync", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
         //INSERT_ID("insert_id", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.SESSION), //
         INTERACTIVE_TIMEOUT("interactive_timeout", (r) -> r.getLongWithBoundaryBias(1, 31536000), Scope.GLOBAL, Scope.SESSION), //
-        INTERNAL_TMP_MEM_STORAGE_ENGINE("internal_tmp_mem_storage_engine", (r) -> Randomly.fromOptions("TempTable", "Memory"), Scope.GLOBAL, Scope.SESSION), //
+        //INTERNAL_TMP_MEM_STORAGE_ENGINE("internal_tmp_mem_storage_engine", (r) -> Randomly.fromOptions("TempTable", "Memory"), Scope.GLOBAL, Scope.SESSION), //
         JOIN_BUFFER_SIZE("join_buffer_size", (r) -> r.getLongWithBoundaryBias(128, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
         KEEP_FILES_ON_CREATE("keep_files_on_create", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
         KEYRING_OPERATIONS("keyring_operations", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
@@ -382,7 +364,7 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
                 "'log_filter_internal; log_sink_test'",
                 "'log_filter_dragnet; log_sink_internal'",
                 "'log_filter_dragnet; log_sink_json'"), Scope.GLOBAL), //
-        //LOG_ERROR_SUPPRESSION_LIST("log_error_suppression_list", (r) -> r.getString(), Scope.GLOBAL), //
+
         LOG_ERROR_VERBOSITY("log_error_verbosity", (r) -> Randomly.fromOptions("1", "2", "3"), Scope.GLOBAL), //
         LOG_OUTPUT("log_output", (r) -> Randomly.fromOptions("'TABLE'", "'FILE'", "'NONE'"), Scope.GLOBAL), //
         LOG_QUERIES_NOT_USING_INDEXES("log_queries_not_using_indexes", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
@@ -421,37 +403,6 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         MAX_WRITE_LOCK_COUNT("max_write_lock_count", (r) -> r.getLongWithBoundaryBias(1, Long.MAX_VALUE), Scope.GLOBAL), //
         MIN_EXAMINED_ROW_LIMIT("min_examined_row_limit", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
         MYSQL_NATIVE_PASSWORD_PROXY_USERS("mysql_native_password_proxy_users", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        //NDBINFO_OFFLINE("ndbinfo_offline", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        // NDB_BLOB_WRITE_BATCH_BYTES("ndb_blob_write_batch_bytes", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
-        //NDB_CLEAR_APPLY_STATUS("ndb_clear_apply_status", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        //NDB_CONFLICT_ROLE("ndb_conflict_role", (r) -> Randomly.fromOptions("'NONE'", "'PRIMARY'", "'SECONDARY'", "'PASS'"), Scope.GLOBAL), //
-        //NDB_DATA_NODE_NEIGHBOUR("ndb_data_node_neighbour", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
-        //NDB_DEFAULT_COLUMN_FORMAT("ndb_default_column_format", (r) -> Randomly.fromOptions("FIXED", "DYNAMIC"), Scope.GLOBAL), //
-//        NDB_DISTRIBUTION("ndb_distribution", (r) -> Randomly.fromOptions("KEYHASH", "LINHASH"), Scope.GLOBAL, Scope.SESSION), //
-//        NDB_EVENTBUFFER_FREE_PERCENT("ndb_eventbuffer_free_percent", (r) -> r.getLongWithBoundaryBias(1, 99), Scope.GLOBAL), //
-//        NDB_EVENTBUFFER_MAX_ALLOC("ndb_eventbuffer_max_alloc", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL), //
-//        NDB_EXTRA_LOGGING("ndb_extra_logging", (r) -> r.getLongWithBoundaryBias(0, 15), Scope.GLOBAL), //
-//        NDB_FULLY_REPLICATED("ndb_fully_replicated", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-//        NDB_LOG_BINLOG_INDEX("ndb_log_binlog_index", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-//        NDB_LOG_CACHE_SIZE("ndb_log_cache_size", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL), //
-//        NDB_LOG_EMPTY_EPOCHS("ndb_log_empty_epochs", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-//        NDB_LOG_EMPTY_UPDATE("ndb_log_empty_update", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-//        NDB_LOG_UPDATED_ONLY("ndb_log_updated_only", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-//        NDB_LOG_UPDATE_AS_WRITE("ndb_log_update_as_write", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-//        NDB_LOG_UPDATE_MINIMAL("ndb_log_update_minimal", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-//        NDB_METADATA_CHECK("ndb_metadata_check", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-//        NDB_METADATA_CHECK_INTERVAL("ndb_metadata_check_interval", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
-//        NDB_METADATA_SYNC("ndb_metadata_sync", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-//        NDB_READ_BACKUP("ndb_read_backup", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
-//        NDB_RECV_THREAD_ACTIVATION_THRESHOLD("ndb_recv_thread_activation_threshold", (r) -> r.getLongWithBoundaryBias(1, 32), Scope.GLOBAL), //
-//        // NDB_RECV_THREAD_CPU_MASK("ndb_recv_thread_cpu_mask", (r) -> r.getString(), Scope.GLOBAL), //
-//        NDB_REPLICA_BATCH_SIZE("ndb_replica_batch_size", (r) -> r.getLongWithBoundaryBias(0, 1048576), Scope.GLOBAL), //
-//        NDB_REPLICA_BLOB_WRITE_BATCH_BYTES("ndb_replica_blob_write_batch_bytes", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
-//        NDB_REPORT_THRESH_BINLOG_EPOCH_SLIP("ndb_report_thresh_binlog_epoch_slip", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL), //
-//        NDB_REPORT_THRESH_BINLOG_MEM_USAGE("ndb_report_thresh_binlog_mem_usage", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL), //
-//        NDB_ROW_CHECKSUM("ndb_row_checksum", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-//        NDB_SCHEMA_DIST_LOCK_WAIT_TIMEOUT("ndb_schema_dist_lock_wait_timeout", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
-//        NDB_SLAVE_CONFLICT_ROLE("ndb_slave_conflict_role", (r) -> Randomly.fromOptions("'NONE'", "'PRIMARY'", "'SECONDARY'", "'PASS'"), Scope.GLOBAL), //
         NET_BUFFER_LENGTH("net_buffer_length", (r) -> r.getLongWithBoundaryBias(1024, 1048576), Scope.GLOBAL), //
         NET_READ_TIMEOUT("net_read_timeout", (r) -> r.getLongWithBoundaryBias(1, 31536000), Scope.GLOBAL, Scope.SESSION), //
         NET_RETRY_COUNT("net_retry_count", (r) -> r.getLongWithBoundaryBias(1, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
@@ -467,7 +418,6 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         OPTIMIZER_TRACE_MAX_MEM_SIZE("optimizer_trace_max_mem_size", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
         OPTIMIZER_TRACE_OFFSET("optimizer_trace_offset", (r) -> r.getLongWithBoundaryBias(-2147483648, 2147483647), Scope.GLOBAL, Scope.SESSION), //
         ORIGINAL_COMMIT_TIMESTAMP("original_commit_timestamp", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.SESSION), //
-        //ORIGINAL_SERVER_VERSION("original_server_version", (r) -> r.getString(), Scope.SESSION), //
         PARSER_MAX_MEM_SIZE("parser_max_mem_size", (r) -> r.getLongWithBoundaryBias(1000000, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
         PARTIAL_REVOKES("partial_revokes", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
         PASSWORD_HISTORY("password_history", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
@@ -485,8 +435,6 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         PSEUDO_THREAD_ID("pseudo_thread_id", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.SESSION), //
         QUERY_ALLOC_BLOCK_SIZE("query_alloc_block_size", (r) -> r.getLongWithBoundaryBias(1024, 4294967295L), Scope.GLOBAL, Scope.SESSION), //
         QUERY_PREALLOC_SIZE("query_prealloc_size", (r) -> r.getLongWithBoundaryBias(8192, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
-        //        RAND_SEED1("rand_seed1", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.SESSION), //
-//        RAND_SEED2("rand_seed2", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.SESSION), //
         RANGE_ALLOC_BLOCK_SIZE("range_alloc_block_size", (r) -> r.getLongWithBoundaryBias(4096, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
         RANGE_OPTIMIZER_MAX_MEM_SIZE("range_optimizer_max_mem_size", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
         // RBR_EXEC_MODE("rbr_exec_mode", (r) -> Randomly.fromOptions("STRICT", "IDEMPOTENT"), Scope.GLOBAL, Scope.SESSION), //
@@ -496,22 +444,6 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         REGEXP_STACK_LIMIT("regexp_stack_limit", (r) -> r.getLongWithBoundaryBias(0, 2147483647), Scope.GLOBAL), //
         REGEXP_TIME_LIMIT("regexp_time_limit", (r) -> r.getLongWithBoundaryBias(0, 2147483647), Scope.GLOBAL), //
         RELAY_LOG_PURGE("relay_log_purge", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        REPLICATION_OPTIMIZE_FOR_STATIC_PLUGIN_CONFIG("replication_optimize_for_static_plugin_config", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        REPLICATION_SENDER_OBSERVE_COMMIT_ONLY("replication_sender_observe_commit_only", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        REPLICA_ALLOW_BATCHING("replica_allow_batching", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        REPLICA_CHECKPOINT_GROUP("replica_checkpoint_group", (r) -> r.getLongWithBoundaryBias(1, 512), Scope.GLOBAL), //
-        REPLICA_CHECKPOINT_PERIOD("replica_checkpoint_period", (r) -> r.getLongWithBoundaryBias(1, 4294967295L), Scope.GLOBAL), //
-        REPLICA_COMPRESSED_PROTOCOL("replica_compressed_protocol", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        REPLICA_EXEC_MODE("replica_exec_mode", (r) -> Randomly.fromOptions("STRICT", "IDEMPOTENT"), Scope.GLOBAL), //
-        REPLICA_MAX_ALLOWED_PACKET("replica_max_allowed_packet", (r) -> r.getLongWithBoundaryBias(1024, 1073741824), Scope.GLOBAL), //
-        REPLICA_NET_TIMEOUT("replica_net_timeout", (r) -> r.getLongWithBoundaryBias(1, 31536000), Scope.GLOBAL), //
-        REPLICA_PARALLEL_TYPE("replica_parallel_type", (r) -> Randomly.fromOptions("'DATABASE'", "'LOGICAL_CLOCK'"), Scope.GLOBAL), //
-        REPLICA_PARALLEL_WORKERS("replica_parallel_workers", (r) -> r.getLongWithBoundaryBias(0, 1024), Scope.GLOBAL), //
-        //REPLICA_PENDING_JOBS_SIZE_MAX("replica_pending_jobs_size_max", (r) -> r.getLongWithBoundaryBias(1024, 18446744073709551615L), Scope.GLOBAL), //
-        REPLICA_PRESERVE_COMMIT_ORDER("replica_preserve_commit_order", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        REPLICA_SQL_VERIFY_CHECKSUM("replica_sql_verify_checksum", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        REPLICA_TRANSACTION_RETRIES("replica_transaction_retries", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
-        REPLICA_TYPE_CONVERSIONS("replica_type_conversions", (r) -> Randomly.fromOptions("ALL_LOSSY", "ALL_NON_LOSSY", "ALL_SIGNED", "ALL_UNSIGNED"), Scope.GLOBAL), //
         REQUIRE_ROW_FORMAT("require_row_format", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.SESSION), //
         REQUIRE_SECURE_TRANSPORT("require_secure_transport", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
         //RESULTSET_METADATA("resultset_metadata", (r) -> Randomly.fromOptions("FULL", "NONE"),Scope.SESSION), //
@@ -519,7 +451,7 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         RPL_STOP_REPLICA_TIMEOUT("rpl_stop_replica_timeout", (r) -> r.getLongWithBoundaryBias(0, 31536000), Scope.GLOBAL), //
         RPL_STOP_SLAVE_TIMEOUT("rpl_stop_slave_timeout", (r) -> r.getLongWithBoundaryBias(0, 31536000), Scope.GLOBAL), //
         SCHEMA_DEFINITION_CACHE("schema_definition_cache", (r) -> r.getLongWithBoundaryBias(256, 524288), Scope.GLOBAL), //
-        SECONDARY_ENGINE_COST_THRESHOLD("secondary_engine_cost_threshold", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
+        //SECONDARY_ENGINE_COST_THRESHOLD("secondary_engine_cost_threshold", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
         SELECT_INTO_BUFFER_SIZE("select_into_buffer_size", (r) -> r.getLongWithBoundaryBias(8192, Long.MAX_VALUE), Scope.GLOBAL, Scope.SESSION), //
         SELECT_INTO_DISK_SYNC("select_into_disk_sync", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
         SELECT_INTO_DISK_SYNC_DELAY("select_into_disk_sync_delay", (r) -> r.getLongWithBoundaryBias(0, 31536000), Scope.GLOBAL, Scope.SESSION), //
@@ -530,23 +462,9 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         SESSION_TRACK_SYSTEM_VARIABLES("session_track_system_variables", (r) -> Randomly.fromOptions("time_zone", "autocommit", "character_set_client", "character_set_results", "character_set_connection"), Scope.GLOBAL, Scope.SESSION), //
         SESSION_TRACK_TRANSACTION_INFO("session_track_transaction_info", (r) -> Randomly.fromOptions("OFF", "STATE", "CHARACTERISTICS"), Scope.GLOBAL, Scope.SESSION), //
         SHA256_PASSWORD_PROXY_USERS("sha256_password_proxy_users", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        SHOW_CREATE_TABLE_SKIP_SECONDARY_ENGINE("show_create_table_skip_secondary_engine", (r) -> Randomly.fromOptions("OFF", "ON"),  Scope.SESSION), //
+        //SHOW_CREATE_TABLE_SKIP_SECONDARY_ENGINE("show_create_table_skip_secondary_engine", (r) -> Randomly.fromOptions("OFF", "ON"),  Scope.SESSION), //
         SHOW_CREATE_TABLE_VERBOSITY("show_create_table_verbosity", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.SESSION), //
         SHOW_GIPK_IN_CREATE_TABLE_AND_INFORMATION_SCHEMA("show_gipk_in_create_table_and_information_schema", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
-        SLAVE_ALLOW_BATCHING("slave_allow_batching", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        SLAVE_CHECKPOINT_GROUP("slave_checkpoint_group", (r) -> r.getLongWithBoundaryBias(1, 512), Scope.GLOBAL), //
-        SLAVE_CHECKPOINT_PERIOD("slave_checkpoint_period", (r) -> r.getLongWithBoundaryBias(1, 4294967295L), Scope.GLOBAL), //
-        SLAVE_COMPRESSED_PROTOCOL("slave_compressed_protocol", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        SLAVE_EXEC_MODE("slave_exec_mode", (r) -> Randomly.fromOptions("STRICT", "IDEMPOTENT"), Scope.GLOBAL), //
-        SLAVE_MAX_ALLOWED_PACKET("slave_max_allowed_packet", (r) -> r.getLongWithBoundaryBias(1024, 1073741824), Scope.GLOBAL), //
-        SLAVE_NET_TIMEOUT("slave_net_timeout", (r) -> r.getLongWithBoundaryBias(1, 31536000), Scope.GLOBAL), //
-        SLAVE_PARALLEL_TYPE("slave_parallel_type", (r) -> Randomly.fromOptions("'DATABASE'", "'LOGICAL_CLOCK'"), Scope.GLOBAL), //
-        SLAVE_PARALLEL_WORKERS("slave_parallel_workers", (r) -> r.getLongWithBoundaryBias(0, 1024), Scope.GLOBAL), //
-        //SLAVE_PENDING_JOBS_SIZE_MAX("slave_pending_jobs_size_max", (r) -> r.getLongWithBoundaryBias(1024, 18446744073709551615L), Scope.GLOBAL), //
-        SLAVE_PRESERVE_COMMIT_ORDER("slave_preserve_commit_order", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        SLAVE_SQL_VERIFY_CHECKSUM("slave_sql_verify_checksum", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
-        SLAVE_TRANSACTION_RETRIES("slave_transaction_retries", (r) -> r.getLongWithBoundaryBias(0, 4294967295L), Scope.GLOBAL), //
-        SLAVE_TYPE_CONVERSIONS("slave_type_conversions", (r) -> Randomly.fromOptions("ALL_LOSSY", "ALL_NON_LOSSY", "ALL_SIGNED", "ALL_UNSIGNED"), Scope.GLOBAL), //
         SLOW_LAUNCH_TIME("slow_launch_time", (r) -> r.getLongWithBoundaryBias(0, 31536000), Scope.GLOBAL), //
         SLOW_QUERY_LOG("slow_query_log", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
         //SLOW_QUERY_LOG_FILE("slow_query_log_file", (r) -> r.getString(), Scope.GLOBAL), //
@@ -619,8 +537,7 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         WAIT_TIMEOUT("wait_timeout", (r) -> r.getLongWithBoundaryBias(1, 31536000), Scope.GLOBAL, Scope.SESSION), //
         WINDOWING_USE_HIGH_PRECISION("windowing_use_high_precision", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
         XA_DETACH_ON_PREPARE("xa_detach_on_prepare", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION);//
-
-        // TODO: https://dev.mysql.com/doc/refman/8.0/en/switchable-optimizations.html
+     // TODO: https://dev.mysql.com/doc/refman/8.0/en/switchable-optimizations.html
 
         private final GenericAction delegate;
 

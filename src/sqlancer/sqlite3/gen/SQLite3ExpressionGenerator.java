@@ -6,11 +6,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import sqlancer.BaseConfigurationGenerator;
+import sqlancer.ExpressionAction;
+import sqlancer.ParameteraAwareGenerator;
 import sqlancer.Randomly;
 import sqlancer.common.gen.ExpressionGenerator;
 import sqlancer.common.gen.NoRECGenerator;
 import sqlancer.common.gen.TLPWhereGenerator;
 import sqlancer.common.schema.AbstractTables;
+import sqlancer.mysql.gen.MySQLExpressionGenerator;
 import sqlancer.sqlite3.SQLite3GlobalState;
 import sqlancer.sqlite3.ast.SQLite3Aggregate;
 import sqlancer.sqlite3.ast.SQLite3Aggregate.SQLite3AggregateFunction;
@@ -50,6 +54,8 @@ import sqlancer.sqlite3.schema.SQLite3Schema.SQLite3Column.SQLite3CollateSequenc
 import sqlancer.sqlite3.schema.SQLite3Schema.SQLite3RowValue;
 import sqlancer.sqlite3.schema.SQLite3Schema.SQLite3Table;
 
+import static sqlancer.ParameteraAwareGenerator.featureSet;
+
 public class SQLite3ExpressionGenerator implements ExpressionGenerator<SQLite3Expression>,
         NoRECGenerator<SQLite3Select, Join, SQLite3Expression, SQLite3Table, SQLite3Column>,
         TLPWhereGenerator<SQLite3Select, Join, SQLite3Expression, SQLite3Table, SQLite3Column> {
@@ -61,10 +67,10 @@ public class SQLite3ExpressionGenerator implements ExpressionGenerator<SQLite3Ex
     private List<SQLite3Table> targetTables;
     private final Randomly r;
     private boolean deterministicOnly;
-    private boolean allowMatchClause;
-    private boolean allowAggregateFunctions;
-    private boolean allowSubqueries;
-    private boolean allowAggreates;
+    private boolean allowMatchClause=true;
+    private boolean allowAggregateFunctions=true;
+    private boolean allowSubqueries=true;
+    private boolean allowAggreates=true;
 
     public SQLite3ExpressionGenerator(SQLite3ExpressionGenerator other) {
         this.rw = other.rw;
@@ -218,10 +224,55 @@ public class SQLite3ExpressionGenerator implements ExpressionGenerator<SQLite3Ex
         }
     }
 
-    enum ExpressionType {
-        RANDOM_QUERY, COLUMN_NAME, LITERAL_VALUE, UNARY_OPERATOR, POSTFIX_UNARY_OPERATOR, BINARY_OPERATOR,
-        BETWEEN_OPERATOR, CAST_EXPRESSION, BINARY_COMPARISON_OPERATOR, FUNCTION, IN_OPERATOR, COLLATE, CASE_OPERATOR,
-        MATCH, AGGREGATE_FUNCTION, ROW_VALUE_COMPARISON, AND_OR_CHAIN
+    public enum ExpressionType implements ExpressionAction {
+        AND_OR_CHAIN, LITERAL_VALUE, COLUMN_NAME, UNARY_OPERATOR, POSTFIX_UNARY_OPERATOR,
+        BINARY_OPERATOR, BINARY_COMPARISON_OPERATOR, BETWEEN_OPERATOR,
+        CAST_EXPRESSION, FUNCTION, IN_OPERATOR, COLLATE, CASE_OPERATOR,
+        MATCH, AGGREGATE_FUNCTION, ROW_VALUE_COMPARISON, RANDOM_QUERY
+    }
+
+    public ExpressionType selectAction(){
+        List<ExpressionType> list = new ArrayList<>(Arrays.asList(ExpressionType.values()));
+        if (columns.isEmpty()) {
+            list.remove(ExpressionType.COLUMN_NAME);
+        }
+        if (!allowMatchClause) {
+            list.remove(ExpressionType.MATCH);
+        }
+        if (!allowAggregateFunctions) {
+            list.remove(ExpressionType.AGGREGATE_FUNCTION);
+        }
+        if (!allowSubqueries) {
+            list.remove(ExpressionType.RANDOM_QUERY);
+        }
+        if (!globalState.getDbmsSpecificOptions().testFunctions) {
+            list.remove(ExpressionType.FUNCTION);
+        }
+        if (!globalState.getDbmsSpecificOptions().testMatch) {
+            list.remove(ExpressionType.MATCH);
+        }
+        if (!globalState.getDbmsSpecificOptions().testIn) {
+            list.remove(ExpressionType.IN_OPERATOR);
+        }
+
+        if(BaseConfigurationGenerator.isTrainingPhase){
+            SQLite3ExpressionGenerator.ExpressionType actions = Randomly.fromList(list);
+            featureSet.add(actions);
+            return actions;
+        } else {
+            double random = Randomly.getPercentage();
+            double cumulativeProbability = 0.0;
+
+            for(ExpressionType action : list) {
+
+                cumulativeProbability += ParameteraAwareGenerator.comActionProbabilities[action.ordinal()];
+
+                if (random <= cumulativeProbability) {
+                    return action;
+                }
+            }
+            return Randomly.fromList(list);
+        }
     }
 
     public SQLite3Expression generateExpression() {
@@ -256,30 +307,7 @@ public class SQLite3ExpressionGenerator implements ExpressionGenerator<SQLite3Ex
             }
         }
 
-        List<ExpressionType> list = new ArrayList<>(Arrays.asList(ExpressionType.values()));
-        if (columns.isEmpty()) {
-            list.remove(ExpressionType.COLUMN_NAME);
-        }
-        if (!allowMatchClause) {
-            list.remove(ExpressionType.MATCH);
-        }
-        if (!allowAggregateFunctions) {
-            list.remove(ExpressionType.AGGREGATE_FUNCTION);
-        }
-        if (!allowSubqueries) {
-            list.remove(ExpressionType.RANDOM_QUERY);
-        }
-        if (!globalState.getDbmsSpecificOptions().testFunctions) {
-            list.remove(ExpressionType.FUNCTION);
-        }
-        if (!globalState.getDbmsSpecificOptions().testMatch) {
-            list.remove(ExpressionType.MATCH);
-        }
-        if (!globalState.getDbmsSpecificOptions().testIn) {
-            list.remove(ExpressionType.IN_OPERATOR);
-        }
-        ExpressionType randomExpressionType = Randomly.fromList(list);
-        switch (randomExpressionType) {
+        switch (selectAction()) {
         case AND_OR_CHAIN:
             return getAndOrChain(depth + 1);
         case LITERAL_VALUE:
@@ -317,7 +345,7 @@ public class SQLite3ExpressionGenerator implements ExpressionGenerator<SQLite3Ex
             // TODO: depth
             return SQLite3RandomQuerySynthesizer.generate(globalState, 1);
         default:
-            throw new AssertionError(randomExpressionType);
+            throw new AssertionError();
         }
     }
 

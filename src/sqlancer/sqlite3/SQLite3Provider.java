@@ -11,26 +11,15 @@ import java.util.stream.Collectors;
 
 import com.google.auto.service.AutoService;
 
-import sqlancer.AbstractAction;
-import sqlancer.DatabaseProvider;
-import sqlancer.IgnoreMeException;
-import sqlancer.Randomly;
-import sqlancer.SQLConnection;
-import sqlancer.SQLProviderAdapter;
-import sqlancer.StatementExecutor;
+import sqlancer.*;
 import sqlancer.common.DBMSCommon;
 import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.common.query.SQLQueryProvider;
 import sqlancer.common.query.SQLancerResultSet;
-import sqlancer.sqlite3.gen.SQLite3AnalyzeGenerator;
-import sqlancer.sqlite3.gen.SQLite3CreateVirtualRtreeTabelGenerator;
-import sqlancer.sqlite3.gen.SQLite3ExplainGenerator;
-import sqlancer.sqlite3.gen.SQLite3PragmaGenerator;
-import sqlancer.sqlite3.gen.SQLite3ReindexGenerator;
-import sqlancer.sqlite3.gen.SQLite3TransactionGenerator;
-import sqlancer.sqlite3.gen.SQLite3VacuumGenerator;
-import sqlancer.sqlite3.gen.SQLite3VirtualFTSTableCommandGenerator;
+import sqlancer.mysql.MySQLGlobalState;
+import sqlancer.postgres.gen.PostgresExpressionGenerator;
+import sqlancer.sqlite3.gen.*;
 import sqlancer.sqlite3.gen.ddl.SQLite3AlterTable;
 import sqlancer.sqlite3.gen.ddl.SQLite3CreateTriggerGenerator;
 import sqlancer.sqlite3.gen.ddl.SQLite3CreateVirtualFTSTableGenerator;
@@ -60,7 +49,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
     }
 
     public enum Action implements AbstractAction<SQLite3GlobalState> {
-        PRAGMA(SQLite3PragmaGenerator::insertPragma), // 0
+        //PRAGMA(SQLite3PragmaGenerator::insertPragma), // 0
         CREATE_INDEX(SQLite3IndexGenerator::insertIndex), // 1
         CREATE_VIEW(SQLite3ViewGenerator::generate), // 2
         CREATE_TRIGGER(SQLite3CreateTriggerGenerator::create), // 3
@@ -158,9 +147,9 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
         case UPDATE:
             nrPerformed = r.getInteger(0, 30);
             break;
-        case PRAGMA:
-            nrPerformed = r.getInteger(0, 20);
-            break;
+//        case PRAGMA:
+//            nrPerformed = r.getInteger(0, 20);
+//            break;
         case CREATE_TABLE:
         case CREATE_VIRTUALTABLE:
         case CREATE_RTREETABLE:
@@ -229,6 +218,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
                             "generated column loop", "integer overflow", "malformed JSON",
                             "JSON cannot hold BLOB values", "JSON path error", "labels must be TEXT",
                             "table does not support scanning"));
+            AFLMonitor.getInstance().executeSQLStatement(q.getQueryString());
             if (!q.execute(globalState)) {
                 throw new IgnoreMeException();
             }
@@ -284,7 +274,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
     }
 
     @Override
-    public SQLConnection createDatabase(SQLite3GlobalState globalState) throws SQLException {
+    public SQLConnection createDatabase(SQLite3GlobalState globalState) throws SQLException, IOException {
         File dir = new File("." + File.separator + "databases");
         if (!dir.exists()) {
             dir.mkdir();
@@ -293,8 +283,15 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
         if (dataBase.exists() && ((SQLite3GlobalState) globalState).getDbmsSpecificOptions().deleteIfExists) {
             dataBase.delete();
         }
+        File dataBaseAfl = new File(dir, globalState.getDatabaseName() + "Afl.db");
+        if (dataBaseAfl.exists() && ((SQLite3GlobalState) globalState).getDbmsSpecificOptions().deleteIfExists) {
+            dataBaseAfl.delete();
+        }
         String url = "jdbc:sqlite:" + dataBase.getAbsolutePath();
+        AFLMonitor.getInstance().executeSQLStatement(".open " + dataBaseAfl.getAbsolutePath());
         return new SQLConnection(DriverManager.getConnection(url));
+        //String url = "jdbc:sqlite:" + dataBase.getAbsolutePath();jdbc:sqlite:
+        //return new SQLite3AFLConnection(dataBase.getAbsolutePath());
     }
 
     @Override
@@ -356,4 +353,33 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
 
         return true;
     }
+
+    @Override
+    public Class<? extends ExpressionAction> getActionClass() {
+        // 确保 MySQLExpressionGenerator.Actions 是 public 的
+        return SQLite3ExpressionGenerator.ExpressionType.class;
+    }
+
+    @Override
+    public void generateConfiguration(SQLite3GlobalState globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception {
+        boolean success;
+        int nrTries = 0;
+        do {
+            SQLQueryAdapter config = globalState.getConfigurationGenerator().generateConfigForParameter(action);
+            success =  globalState.executeStatement( config);
+            System.out.println(config.getQueryString());
+        } while (!success && nrTries++ < 100);
+    }
+
+    @Override
+    public void generateDefaultConfiguration(SQLite3GlobalState globalState, BaseConfigurationGenerator.ConfigurationAction action) throws Exception {
+        boolean success;
+        int nrTries = 0;
+        do {
+            SQLQueryAdapter config = globalState.getConfigurationGenerator().generateDefaultConfigForParameter(action);
+            success =  globalState.executeStatement( config);
+            System.out.println(config.getQueryString());
+        } while (!success && nrTries++ < 100);
+    }
+
 }

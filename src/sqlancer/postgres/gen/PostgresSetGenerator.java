@@ -68,6 +68,7 @@ public final class PostgresSetGenerator extends BaseConfigurationGenerator {
     }
 
     private enum Action implements ConfigurationAction {
+        WAL_COMPRESSION("wal_compression", (r) -> Randomly.fromOptions("on", "off", "pglz")),
         ALLOW_IN_PLACE_TABLESPACES("allow_in_place_tablespaces", (r) -> Randomly.fromOptions("on", "off")), //
         //APPLICATION_NAME("application_name", (r) -> r.getString()), //
         ARRAY_NULLS("array_nulls", (r) -> Randomly.fromOptions("on", "off")), //
@@ -86,7 +87,7 @@ public final class PostgresSetGenerator extends BaseConfigurationGenerator {
         CONSTRAINT_EXCLUSION("constraint_exclusion", (r) -> Randomly.fromOptions("on", "off", "partition")), //
         CPU_INDEX_TUPLE_COST("cpu_index_tuple_cost", (r) -> r.getDoubleWithBoundaryBias(0,1.0)), //
         CPU_OPERATOR_COST("cpu_operator_cost", (r) -> r.getDoubleWithBoundaryBias(0,1.0)), //
-        PU_TUPLE_COST("cpu_tuple_cost", (r) -> r.getDoubleWithBoundaryBias(0,1.0)), //
+        CPU_TUPLE_COST("cpu_tuple_cost", (r) -> r.getDoubleWithBoundaryBias(0,1.0)), //
         //CREATEROLE_SELF_GRANT("createrole_self_grant", (r) -> r.getString()), //
         CURSOR_TUPLE_FRACTION("cursor_tuple_fraction", (r) -> r.getDoubleWithBoundaryBias(0,1.0)), //
         //DATA_CHECKSUMS("data_checksums", (r) -> Randomly.fromOptions("on", "off")), //
@@ -163,11 +164,11 @@ public final class PostgresSetGenerator extends BaseConfigurationGenerator {
         JIT_OPTIMIZE_ABOVE_COST("jit_optimize_above_cost", (r) -> r.getDoubleWithBoundaryBias(-1.0, 1000000.0)), //
         JIT_TUPLE_DEFORMING("jit_tuple_deforming", (r) -> Randomly.fromOptions("on", "off")), //
         JOIN_COLLAPSE_LIMIT("join_collapse_limit", (r) -> r.getLongWithBoundaryBias(1, 50)), //
-//        LC_MESSAGES("lc_messages", (r) -> r.getString()), //
+        //        LC_MESSAGES("lc_messages", (r) -> r.getString()), //
 //        LC_MONETARY("lc_monetary", (r) -> r.getString()), //
 //        LC_NUMERIC("lc_numeric", (r) -> r.getString()), //
 //        LC_TIME("lc_time", (r) -> r.getString()), //
-       // LOCAL_PRELOAD_LIBRARIES("local_preload_libraries", (r) -> r.getString(), Scope.BACKEND), //
+        // LOCAL_PRELOAD_LIBRARIES("local_preload_libraries", (r) -> r.getString(), Scope.BACKEND), //
         LOCK_TIMEOUT("lock_timeout", (r) -> r.getLongWithBoundaryBias(0, 2147483647)), //
         LOGICAL_DECODING_WORK_MEM("logical_decoding_work_mem", (r) -> r.getLongWithBoundaryBias(64, Integer.MAX_VALUE)), //
         //LOG_CONNECTIONS("log_connections", (r) -> Randomly.fromOptions("on", "off")), //
@@ -181,7 +182,7 @@ public final class PostgresSetGenerator extends BaseConfigurationGenerator {
         LOG_MIN_ERROR_STATEMENT("log_min_error_statement", (r) -> Randomly.fromOptions("debug5", "debug4", "debug3", "debug2", "debug1", "info", "notice", "warning", "error", "log", "fatal", "panic")), //
         LOG_MIN_MESSAGES("log_min_messages", (r) -> Randomly.fromOptions("debug5", "debug4", "debug3", "debug2", "debug1", "info", "notice", "warning", "error", "log", "fatal", "panic")), //
         LOG_PARAMETER_MAX_LENGTH("log_parameter_max_length", (r) -> r.getLongWithBoundaryBias(-1, 1073741823)), //
-        LOG_PARAMETER_MAX_LENGTH_ON_ERROR("log_parameter_max_length_on_error", (r) -> r.getLongWithBoundaryBias(-1, 2147483647)), //
+        LOG_PARAMETER_MAX_LENGTH_ON_ERROR("log_parameter_max_length_on_error", (r) -> r.getLongWithBoundaryBias(-1, 1073741823)), //
         LOG_PARSER_STATS("log_parser_stats", (r) -> Randomly.fromOptions("on", "off")), //
         LOG_PLANNER_STATS("log_planner_stats", (r) -> Randomly.fromOptions("on", "off")), //
         LOG_REPLICATION_COMMANDS("log_replication_commands", (r) -> Randomly.fromOptions("on", "off")), //
@@ -213,10 +214,10 @@ public final class PostgresSetGenerator extends BaseConfigurationGenerator {
         //RESTRICT_NONSYSTEM_RELATION_KIND("restrict_nonsystem_relation_kind", (r) -> r.getString()), //
         ROW_SECURITY("row_security", (r) -> Randomly.fromOptions("on", "off")), //
         SCRAM_ITERATIONS("scram_iterations", (r) -> r.getLongWithBoundaryBias(4096, 2147483647)), //
-       //  SEARCH_PATH("search_path", (r) -> r.getString()), //
+        //  SEARCH_PATH("search_path", (r) -> r.getString()), //
         //SEGMENT_SIZE("segment_size", (r) -> r.getLongWithBoundaryBias(1, 1024)), //
         SEQ_PAGE_COST("seq_page_cost", (r) ->r.getDoubleWithBoundaryBias(0,100.0)), //
-//        SERVER_ENCODING("server_encoding", (r) -> r.getString()), //
+        //        SERVER_ENCODING("server_encoding", (r) -> r.getString()), //
 //        SERVER_VERSION("server_version", (r) -> r.getString()), //
         //SERVER_VERSION_NUM("server_version_num", (r) -> r.getLongWithBoundaryBias(100000, 200000)), //
         // SESSION_PRELOAD_LIBRARIES("session_preload_libraries", (r) -> r.getString()), //
@@ -224,7 +225,7 @@ public final class PostgresSetGenerator extends BaseConfigurationGenerator {
         //SHARED_MEMORY_SIZE("shared_memory_size", (r) -> r.getLongWithBoundaryBias(128, Long.MAX_VALUE)), //
         //SHARED_MEMORY_SIZE_IN_HUGE_PAGES("shared_memory_size_in_huge_pages", (r) -> r.getLongWithBoundaryBias(0, Long.MAX_VALUE)), //
         //SSL_LIBRARY("ssl_library", (r) -> r.getString()), //
-        STANDARD_CONFORMING_STRINGS("standard_conforming_strings", (r) -> Randomly.fromOptions("on", "off")), //
+        //STANDARD_CONFORMING_STRINGS("standard_conforming_strings", (r) -> Randomly.fromOptions("on", "off")), //
         //STATEMENT_TIMEOUT("statement_timeout", (r) -> r.getLongWithBoundaryBias(0, 2147483647)), //
         STATS_FETCH_CONSISTENCY("stats_fetch_consistency", (r) -> Randomly.fromOptions("none", "cache", "snapshot")), //
         SYNCHRONIZE_SEQSCANS("synchronize_seqscans", (r) -> Randomly.fromOptions("on", "off")), //
@@ -235,7 +236,7 @@ public final class PostgresSetGenerator extends BaseConfigurationGenerator {
         TCP_USER_TIMEOUT("tcp_user_timeout", (r) -> r.getLongWithBoundaryBias(0, 2147483647)), //
         //TEMP_BUFFERS("temp_buffers", (r) -> r.getLongWithBoundaryBias(100, 100000)), //
         TEMP_FILE_LIMIT("temp_file_limit", (r) -> r.getLongWithBoundaryBias(-1, 2147483647)), //
-//        TEMP_TABLESPACES("temp_tablespaces", (r) -> r.getString()), //
+        //        TEMP_TABLESPACES("temp_tablespaces", (r) -> r.getString()), //
 //        TIMEZONE("timezone", (r) -> r.getString()), //
 //        TIMEZONE_ABBREVIATIONS("timezone_abbreviations", (r) -> r.getString()), //
         TRACE_NOTIFY("trace_notify", (r) -> Randomly.fromOptions("on", "off")), //
@@ -262,14 +263,13 @@ public final class PostgresSetGenerator extends BaseConfigurationGenerator {
         VACUUM_MULTIXACT_FREEZE_TABLE_AGE("vacuum_multixact_freeze_table_age", (r) -> r.getLongWithBoundaryBias(0, 2000000000)), //
         //VACUUM_TRUNCATE("vacuum_truncate", (r) -> Randomly.fromOptions("on", "off")), //
         //WAL_BLOCK_SIZE("wal_block_size", (r) -> r.getLongWithBoundaryBias(8192, 8192)), //
-        WAL_COMPRESSION("wal_compression", (r) -> Randomly.fromOptions("on", "off", "pglz", "lz4", "zstd")), //
+        //WAL_COMPRESSION("wal_compression", (r) -> Randomly.fromOptions("on", "off", "pglz", "lz4", "zstd")), //
         //WAL_CONSISTENCY_CHECKING("wal_consistency_checking", (r) -> r.getString()), //
         WAL_SKIP_THRESHOLD("wal_skip_threshold", (r) -> r.getLongWithBoundaryBias(0, 2147483647)), //
         WORK_MEM("work_mem", (r) -> r.getLongWithBoundaryBias(64, Integer.MAX_VALUE)), //
         XMLBINARY("xmlbinary", (r) -> Randomly.fromOptions("base64", "hex")), //
         XMLOPTION("xmloption", (r) -> Randomly.fromOptions("content", "document")), //
         ZERO_DAMAGED_PAGES("zero_damaged_pages", (r) -> Randomly.fromOptions("on", "off")); //
-
 
         private final GenericAction delegate;
 

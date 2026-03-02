@@ -1,10 +1,7 @@
 package sqlancer;
 import com.sun.jna.*;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -16,10 +13,15 @@ public class AFLMonitor implements AutoCloseable {
     // 常量
     public static final int MARIADB_MAP_SIZE =  572507;
     //public static final int MYSQL_MAP_SIZE = 1533718;
-    public static final int AFL_MAP_SIZE = 1533718;
+    public static final int POSTGRES_MAP_SIZE = 204765;
+    public static final int SQLITE_MAP_SIZE = 57366;
+    public static final int AFL_MAP_SIZE =  57366; // 请根据实际情况修改
     private static final String AFL_SHM_ENV_VAR = "__AFL_SHM_ID";
     //private static final String   DBMS_PATH= "/usr/local/mariadb_afl/bin/mariadbd";
-    private static final String   DBMS_PATH= "/usr/local/mysql/bin/mysqld"; // 请根据实际路径修改
+    //private static final String   DBMS_PATH= "/usr/local/mysql/bin/mysqld"; // 请根据实际路径修改
+
+    //private static final String   DBMS_PATH= "/usr/local/pgsql/bin/postgres";
+    private static final String   DBMS_PATH= "/home/tzx/sqlite-src-3510200/sqlite3";
     // SysV IPC 常量
     private static final int IPC_PRIVATE = 0;
     private static final int IPC_CREAT = 01000;
@@ -27,7 +29,9 @@ public class AFLMonitor implements AutoCloseable {
     private final double alpha = 0.4; // 用于权重更新的学习率
 
 
-
+    private BufferedWriter processWriter;
+    private BufferedReader processReader;
+    private BufferedReader processErrorReader;
     // JNA 接口
     public interface CLib extends Library {
         CLib INSTANCE = Native.load("c", CLib.class);
@@ -99,6 +103,17 @@ public class AFLMonitor implements AutoCloseable {
     @Override
     public void close() throws InterruptedException {
         if (!closed.compareAndSet(false, true)) return;
+        try {
+            if (processWriter != null) {
+                processWriter.write(".quit\n");
+                processWriter.flush();
+                processWriter.close();
+            }
+            if (processReader != null) processReader.close();
+            if (processErrorReader != null) processErrorReader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         if (dbmsProcess != null && dbmsProcess.isAlive()) {
             sleep(3000);
             dbmsProcess.destroy(); // 发送 SIGTERM
@@ -163,27 +178,90 @@ public class AFLMonitor implements AutoCloseable {
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
         java.util.Map<String,String> env = pb.environment();
+        if(DBMS_PATH.contains("postgres")){
+            env.put("PGDATA", "/usr/local/pgsql/data");
+        }
         env.put(AFL_SHM_ENV_VAR, String.valueOf(shmId));
         env.put("AFL_MAP_SIZE", String.valueOf(AFL_MAP_SIZE));
         env.put("AFL_IGNORE_PROBLEMS", "1");
         env.put("AFL_DEBUG", "1");
 
+        if(DBMS_PATH.contains("postgres")){
+            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+            pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+        }else if(!DBMS_PATH.contains("sqlite")){
+            pb.inheritIO();
+        }
+
         // 可根据需要切换到数据目录:
         // pb.directory(new java.io.File("/path/to/mysql/base"))
-        pb.inheritIO(); // 直接在当前控制台输出
-        return pb.start();
+        // 直接在当前控制台输出
+        pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+        pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+        Process process = pb.start();
+        if(DBMS_PATH.contains("sqlite")){
+            processWriter = new BufferedWriter(
+                    new OutputStreamWriter(process.getOutputStream()));
+        }
+        return process;
     }
 
-    public void refreshBuffer() {
+//    .
+
+    public void executeSQLStatement(String sql) throws IOException {
+
+
+        // 发送SQL
+        processWriter.write(sql);
+        if (!sql.trim().endsWith(";")) {
+            processWriter.write(";");
+        }
+        processWriter.newLine();
+        processWriter.flush();
+
+
+        if (dbmsProcess == null || !dbmsProcess.isAlive()) {
+            throw new AssertionError("SQLite进程未运行");
+        }
+//        // 3. 发送标记(使用 SELECT 确保有输出)
+//        processWriter.write("SELECT '___END___';\n");
+//        processWriter.flush();
+//        // 读取结果
+//        List<String[]> result = new ArrayList<>();
+//        String line;
+//        long timeout = System.currentTimeMillis() + 5000; // 5秒超时
+//
+//        while (System.currentTimeMillis() < timeout) {
+//            if (processReader.ready()) {
+//                line = processReader.readLine();
+//                if (line == null) break;
+//                if (line.contains("___END___")) {
+//                    break;
+//                }
+//                if (line.trim().isEmpty() || line.startsWith("sqlite>")) {
+//                    continue;
+//                }
+//                // SQLite 默认用 | 分隔列
+//                String[] columns = line.split("\\|", -1);
+//                result.add(columns);
+//                //result.append(line).append("\n");
+//                if (line.startsWith("sqlite>")) break;
+//            }
+//        }
+//        return result;
+    }
+
+        public void refreshBuffer() {
         if (shmPtr == null) return;
         shmPtr.read(0, coverageBuf, 0, AFL_MAP_SIZE);
     }
 
     public  double getCoverageRate(){
-        refreshBuffer();
+       byte[] buf = new byte[AFL_MAP_SIZE];
+        shmPtr.read(0, buf, 0, AFL_MAP_SIZE);
         int hitEdges = 0;
         for (int i = 0; i < AFL_MAP_SIZE; i++) {
-            int v = coverageBuf[i] & 0xFF;
+            int v = buf[i] & 0xFF;
             if (v > 0) {
                 hitEdges++;
             }

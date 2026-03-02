@@ -1,5 +1,6 @@
 package sqlancer.sqlite3.schema;
 
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import sqlancer.AFLMonitor;
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
 import sqlancer.SQLConnection;
@@ -63,7 +65,7 @@ public class SQLite3Schema extends AbstractSchema<SQLite3GlobalState, SQLite3Tab
         }
 
         public SQLite3Column(String name, SQLite3DataType columnType, boolean isInteger, boolean isPrimaryKey,
-                SQLite3CollateSequence collate) {
+                             SQLite3CollateSequence collate) {
             super(name, null, columnType);
             this.isInteger = isInteger;
             this.isPrimaryKey = isPrimaryKey;
@@ -73,7 +75,7 @@ public class SQLite3Schema extends AbstractSchema<SQLite3GlobalState, SQLite3Tab
         }
 
         public SQLite3Column(String rowId, SQLite3DataType columnType, boolean isInteger,
-                SQLite3CollateSequence collate, boolean generated) {
+                             SQLite3CollateSequence collate, boolean generated) {
             this(rowId, columnType, isInteger, generated, collate);
             this.generated = generated;
         }
@@ -116,35 +118,35 @@ public class SQLite3Schema extends AbstractSchema<SQLite3GlobalState, SQLite3Tab
         Object value;
         SQLite3Constant constant;
         switch (valueType) {
-        case INT:
-            value = randomRowValues.getLong(columnIndex);
-            constant = SQLite3Constant.createIntConstant((long) value);
-            break;
-        case REAL:
-            value = randomRowValues.getDouble(columnIndex);
-            if (!Double.isFinite((double) value)) {
-                // TODO: the JDBC driver seems to sometimes return infinity for NULL values
-                throw new IgnoreMeException();
-            }
-            constant = SQLite3Constant.createRealConstant((double) value);
-            break;
-        case TEXT:
-        case NONE:
-            value = randomRowValues.getString(columnIndex);
-            constant = SQLite3Constant.createTextConstant((String) value);
-            break;
-        case BINARY:
-            value = randomRowValues.getBytes(columnIndex);
-            constant = SQLite3Constant.createBinaryConstant((byte[]) value);
-            if (((byte[]) value).length == 0) {
-                // TODO: the JDBC driver seems to sometimes return a zero-length array for NULL values
-                throw new IgnoreMeException();
-            }
-            break;
-        case NULL:
-            return SQLite3Constant.createNullConstant();
-        default:
-            throw new AssertionError(valueType);
+            case INT:
+                value = randomRowValues.getLong(columnIndex);
+                constant = SQLite3Constant.createIntConstant((long) value);
+                break;
+            case REAL:
+                value = randomRowValues.getDouble(columnIndex);
+                if (!Double.isFinite((double) value)) {
+                    // TODO: the JDBC driver seems to sometimes return infinity for NULL values
+                    throw new IgnoreMeException();
+                }
+                constant = SQLite3Constant.createRealConstant((double) value);
+                break;
+            case TEXT:
+            case NONE:
+                value = randomRowValues.getString(columnIndex);
+                constant = SQLite3Constant.createTextConstant((String) value);
+                break;
+            case BINARY:
+                value = randomRowValues.getBytes(columnIndex);
+                constant = SQLite3Constant.createBinaryConstant((byte[]) value);
+                if (((byte[]) value).length == 0) {
+                    // TODO: the JDBC driver seems to sometimes return a zero-length array for NULL values
+                    throw new IgnoreMeException();
+                }
+                break;
+            case NULL:
+                return SQLite3Constant.createNullConstant();
+            default:
+                throw new AssertionError(valueType);
         }
         return constant;
     }
@@ -157,7 +159,7 @@ public class SQLite3Schema extends AbstractSchema<SQLite3GlobalState, SQLite3Tab
 
         public SQLite3RowValue getRandomRowValue(SQLConnection con) throws SQLException {
             String randomRow = String.format("SELECT %s, %s FROM %s ORDER BY RANDOM() LIMIT 1", columnNamesAsString(
-                    c -> c.getTable().getName() + "." + c.getName() + " AS " + c.getTable().getName() + c.getName()),
+                            c -> c.getTable().getName() + "." + c.getName() + " AS " + c.getTable().getName() + c.getName()),
                     columnNamesAsString(c -> "typeof(" + c.getTable().getName() + "." + c.getName() + ")"),
                     tableNamesAsString());
             Map<SQLite3Column, SQLite3Constant> values = new HashMap<>();
@@ -203,7 +205,7 @@ public class SQLite3Schema extends AbstractSchema<SQLite3GlobalState, SQLite3Tab
         private final boolean isReadOnly;
 
         public SQLite3Table(String tableName, List<SQLite3Column> columns, TableKind tableType, boolean withoutRowid,
-                boolean isView, boolean isVirtual, boolean isReadOnly) {
+                            boolean isView, boolean isVirtual, boolean isReadOnly) {
             super(tableName, columns, Collections.emptyList(), isView);
             this.tableType = tableType;
             this.withoutRowid = withoutRowid;
@@ -276,6 +278,8 @@ public class SQLite3Schema extends AbstractSchema<SQLite3GlobalState, SQLite3Tab
         try (Statement s = con.createStatement()) {
             try (ResultSet rs = s.executeQuery("SELECT name, type as category, sql FROM sqlite_master UNION "
                     + "SELECT name, 'temp_table' as category, sql FROM sqlite_temp_master WHERE type='table' UNION SELECT name, 'view' as category, sql FROM sqlite_temp_master WHERE type='view' GROUP BY name;")) {
+                AFLMonitor.getInstance().executeSQLStatement("SELECT name, type as category, sql FROM sqlite_master UNION "
+                        + "SELECT name, 'temp_table' as category, sql FROM sqlite_temp_master WHERE type='table' UNION SELECT name, 'view' as category, sql FROM sqlite_temp_master WHERE type='view' GROUP BY name;");
                 while (rs.next()) {
                     String tableName = rs.getString("name");
                     String tableType = rs.getString("category");
@@ -318,11 +322,12 @@ public class SQLite3Schema extends AbstractSchema<SQLite3GlobalState, SQLite3Tab
                     }
                     databaseTables.add(t);
                 }
-            } catch (SQLException e) {
+            } catch (SQLException | IOException e) {
                 // ignore
             }
             try (ResultSet rs = s.executeQuery(
                     "SELECT name FROM SQLite_master WHERE type = 'index' UNION SELECT name FROM sqlite_temp_master WHERE type='index'")) {
+                AFLMonitor.getInstance().executeSQLStatement("SELECT name FROM SQLite_master WHERE type = 'index' UNION SELECT name FROM sqlite_temp_master WHERE type='index'");
                 while (rs.next()) {
                     String name = rs.getString(1);
                     if (name.contains("_autoindex")) {
@@ -330,7 +335,7 @@ public class SQLite3Schema extends AbstractSchema<SQLite3GlobalState, SQLite3Tab
                     }
                     indexNames.add(name);
                 }
-            } catch (SQLException e) {
+            } catch (SQLException | IOException e) {
                 if (!e.getMessage().contains("The database file is locked")) {
                     throw new AssertionError(e);
                 }
@@ -346,7 +351,7 @@ public class SQLite3Schema extends AbstractSchema<SQLite3GlobalState, SQLite3Tab
     }
 
     private static List<SQLite3Column> getTableColumns(SQLConnection con, String tableName, String sql, boolean isView,
-            boolean isDbStatsTable) throws SQLException {
+                                                       boolean isDbStatsTable) throws SQLException {
         List<SQLite3Column> databaseColumns = new ArrayList<>();
         try (Statement s2 = con.createStatement()) {
             String tableInfoStr = String.format("PRAGMA table_xinfo(%s)", tableName);
@@ -410,31 +415,31 @@ public class SQLite3Schema extends AbstractSchema<SQLite3GlobalState, SQLite3Tab
         String trimmedTypeString = columnTypeString.toUpperCase().replace(" GENERATED ALWAYS", "");
         SQLite3DataType columnType;
         switch (trimmedTypeString) {
-        case "TEXT":
-            columnType = SQLite3DataType.TEXT;
-            break;
-        case "INTEGER":
-            columnType = SQLite3DataType.INT;
-            break;
-        case "INT":
-        case "BOOLEAN":
-            columnType = SQLite3DataType.INT;
-            break;
-        case "":
-            columnType = SQLite3DataType.NONE;
-            break;
-        case "BLOB":
-            columnType = SQLite3DataType.BINARY;
-            break;
-        case "REAL":
-        case "NUM":
-            columnType = SQLite3DataType.REAL;
-            break;
-        case "NULL":
-            columnType = SQLite3DataType.NULL;
-            break;
-        default:
-            throw new AssertionError(trimmedTypeString);
+            case "TEXT":
+                columnType = SQLite3DataType.TEXT;
+                break;
+            case "INTEGER":
+                columnType = SQLite3DataType.INT;
+                break;
+            case "INT":
+            case "BOOLEAN":
+                columnType = SQLite3DataType.INT;
+                break;
+            case "":
+                columnType = SQLite3DataType.NONE;
+                break;
+            case "BLOB":
+                columnType = SQLite3DataType.BINARY;
+                break;
+            case "REAL":
+            case "NUM":
+                columnType = SQLite3DataType.REAL;
+                break;
+            case "NULL":
+                columnType = SQLite3DataType.NULL;
+                break;
+            default:
+                throw new AssertionError(trimmedTypeString);
         }
         return columnType;
     }

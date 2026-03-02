@@ -158,7 +158,10 @@ public class SQLQueryAdapter extends Query<SQLConnection> implements Serializabl
         while (ex != null) {
             if (expectedErrors.errorIsExpected(ex.getMessage())) {
                 return;
-            } else {
+            } else if(ex.getMessage().contains("misuse of")){
+                return;
+            }
+            else {
                 ex = ex.getCause();
             }
         }

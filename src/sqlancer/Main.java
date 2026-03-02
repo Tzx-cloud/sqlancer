@@ -514,14 +514,14 @@ public final class Main {
             state.setConfigurationGenerator(configGenerator);
             int testCount=0;
             while (testCount<1000000) {
-                if(testCount%1000==0) {
-                    configGenerator.topKSnapshot(1000);
+                if(testCount%configGenerator.getAllActions().length==0) {
+                    configGenerator.topKSnapshot();
                 }
                 configGenerator.generateActions();
                 AFLMonitor.testcaseNum =0;
-                for (int i = 0; i < BaseConfigurationGenerator.TRAINING_SAMPLES; i++) {
-                    state.getState().setStatements(new ArrayList<>());
-                    try (C con = provider.createDatabase(state)) {
+
+                state.getState().setStatements(new ArrayList<>());
+                try (C con = provider.createDatabase(state)) {
                         try {
                             stateToRepro.databaseVersion = con.getDatabaseVersion();
                         } catch (Exception e) {
@@ -537,7 +537,7 @@ public final class Main {
                         //AFLMonitor.getInstance().refreshBuffer();
                         provider.generateDatabaseWithConfigurationTest(state, currentGeneratedActions);
                     }
-                }
+
                 AFLMonitor.getInstance().updateComWeight(currentGeneratedActions);
                 testCount++;
             }
@@ -801,6 +801,7 @@ public final class Main {
             }
         }
 
+        //Tang: 2.Testing
         for (int i = 0; i < options.getTotalNumberTries(); i++) {
             final String databaseName = options.getDatabasePrefix() + i;
             final long seed;
@@ -809,71 +810,43 @@ public final class Main {
             } else {
                 seed = options.getRandomSeed() + i;
             }
-            execService.execute(new Runnable() {
-
-                @Override
-                public void run() {
-                    Thread.currentThread().setName(databaseName);
-                    runThread(databaseName);
+            Randomly r = new Randomly(seed);
+           executor = executorFactory.getDBMSExecutor(databaseName, r);
+            try {
+                executor.runConfigurationTesting();
+            } catch (IgnoreMeException e) {
+                continue;
+            } catch (Throwable reduce) {
+                bugs.addAndGet(1);
+                reduce.printStackTrace();
+                executor.getStateToReproduce().exception = reduce.getMessage();
+                executor.getLogger().logFileWriter = null;
+                executor.getLogger().logException(reduce, executor.getStateToReproduce());
+                if (options.serializeReproduceState()) {
+                    executor.getStateToReproduce().logStatement(reduce.getMessage()); // add the error statement
+                    executor.getStateToReproduce().serialize(executor.getLogger().getReproduceFilePath());
                 }
-
-                private void runThread(final String databaseName) {
-                    Randomly r = new Randomly(seed);
+                if(!AFLMonitor.getInstance().isDBMSAlive()){
                     try {
-                        int maxNrDbs = options.getMaxGeneratedDatabases();
-                        // run without a limit if maxNrDbs == -1
-                        for (int i = 0; i < maxNrDbs || maxNrDbs == -1; i++) {
-                            //Tang: close when interrupted
-                            if (Thread.currentThread().isInterrupted()) {
-                                System.out.println("线程 " + databaseName + " 收到中断信号，正在退出...");
-                                break;
-                            }
-                            Boolean continueRunning = run(options, execService, executorFactory, r, databaseName);
-                            if (!continueRunning) {
-                                someOneFails.set(true);
-                                break;
-                            }
-                        }
-                    } finally {
-                        threadsShutdown.addAndGet(1);
-                        if (threadsShutdown.get() == options.getTotalNumberTries()) {
-                            execService.shutdown();
-                        }
+                        executor.getLogger().getLogFileWriter().write("This is a crush! \n");
+                        executor.getLogger().getLogFileWriter().flush();
+                        AFLMonitor.getInstance().restartDBMS();
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
-
-                private boolean run(MainOptions options, ExecutorService execService,
-                                    DBMSExecutorFactory<?, ?, ?> executorFactory, Randomly r, final String databaseName) {
-                    DBMSExecutor<?, ?, ?> executor = executorFactory.getDBMSExecutor(databaseName, r);
-                    try {
-                        executor.run();
-                        return true;
-                    } catch (IgnoreMeException e) {
-                        return true;
-                    } catch (Throwable reduce) {
-                        reduce.printStackTrace();
-                        executor.getStateToReproduce().exception = reduce.getMessage();
-                        executor.getLogger().logFileWriter = null;
-                        executor.getLogger().logException(reduce, executor.getStateToReproduce());
-                        if (options.serializeReproduceState()) {
-                            executor.getStateToReproduce().logStatement(reduce.getMessage()); // add the error statement
-                            executor.getStateToReproduce().serialize(executor.getLogger().getReproduceFilePath());
+            } finally {
+                try {
+                    if (options.logEachSelect()) {
+                        if (executor.getLogger().currentFileWriter != null) {
+                            executor.getLogger().currentFileWriter.close();
                         }
-                        return false;
-                    } finally {
-                        try {
-                            if (options.logEachSelect()) {
-                                if (executor.getLogger().currentFileWriter != null) {
-                                    executor.getLogger().currentFileWriter.close();
-                                }
-                                executor.getLogger().currentFileWriter = null;
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                        executor.getLogger().currentFileWriter = null;
                     }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-            });
+            }
         }
         try {
             if (options.getTimeoutSeconds() == -1) {
@@ -1145,10 +1118,10 @@ public final class Main {
                         / (nrSuccessfulActions.get() + nrUnsuccessfulActions.get()));
                 DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
                 Date date = new Date();
-                System.out.println(String.format(
-                        "[%s] Executed %d queries (%d queries/s; %.2f/s dbs, successful statements: %2d%%). Threads shut down: %d.",
+                System.out.printf(
+                        "[%s] Executed %d queries (%d queries/s; %.2f/s dbs, successful statements: %2d%%). Threads shut down: %d. Coverage: %2d%%.%n",
                         dateFormat.format(date), currentNrQueries,  throughout.get(), throughputDbs,
-                        successfulStatementsRatio, threadsShutdown.get()));
+                        successfulStatementsRatio, threadsShutdown.get(),(long) (AFLMonitor.getInstance().getCoverageRate()*100.0));
                 timeMillis = System.currentTimeMillis();
                 lastNrQueries = currentNrQueries;
                 lastNrDbs = currentNrDbs;

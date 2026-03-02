@@ -12,7 +12,7 @@ public class TestMySQLFuzzing {
 
     @Test
     public void testMySQLFuzzing() throws InterruptedException {
-        String[] args={"mysql","--oracle","TLP_WHERE"};
+        String[] args={"sqlite3","--oracle","WHERE"};
 
         Main.main(args);
         //Main.executeMainOnWeb(args);

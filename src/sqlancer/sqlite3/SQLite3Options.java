@@ -31,7 +31,7 @@ public class SQLite3Options implements DBMSSpecificOptions<SQLite3OracleFactory>
     public boolean testWithoutRowids = true;
 
     @Parameter(names = { "--test-temp-tables" }, description = "Generate TEMP/TEMPORARY tables", arity = 1)
-    public boolean testTempTables = true;
+    public boolean testTempTables = false;
 
     @Parameter(names = { "--test-check-constraints" }, description = "Allow CHECK constraints in tables", arity = 1)
     public boolean testCheckConstraints = true;

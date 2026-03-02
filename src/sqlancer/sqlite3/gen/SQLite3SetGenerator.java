@@ -132,7 +132,7 @@ public class SQLite3SetGenerator extends BaseConfigurationGenerator {
     private enum Action implements ConfigurationAction{
         // SQLite PRAGMA 配置参数
 // 查询分析限制
-        SECURE_DELETE("secure_delete", (r) -> Randomly.fromOptions("OFF", "ON", "FAST"), "OFF", Scope.GLOBAL),
+
         ANALYSIS_LIMIT("analysis_limit", (r) -> r.getLongWithBoundaryBias(0, 1000000), "0", Scope.GLOBAL),
 
         // 应用程序ID
@@ -223,7 +223,7 @@ public class SQLite3SetGenerator extends BaseConfigurationGenerator {
         REVERSE_UNORDERED_SELECTS("reverse_unordered_selects", (r) -> Randomly.fromOptions("OFF", "ON"), "OFF", Scope.GLOBAL),
 
         // 安全删除
-        //SECURE_DELETE("secure_delete", (r) -> Randomly.fromOptions("OFF", "ON", "FAST"), "OFF", Scope.GLOBAL),
+        SECURE_DELETE("secure_delete", (r) -> Randomly.fromOptions("OFF", "ON", "FAST"), "OFF", Scope.GLOBAL),
 
         // 软堆限制（字节）
         SOFT_HEAP_LIMIT("soft_heap_limit", (r) -> r.getLongWithBoundaryBias(0, 1073741824L), "0", Scope.GLOBAL),
@@ -268,6 +268,9 @@ public class SQLite3SetGenerator extends BaseConfigurationGenerator {
         WRITABLE_SCHEMA("writable_schema", (r) -> Randomly.fromOptions("OFF", "ON"), "OFF", Scope.GLOBAL),
 
         WAL_CHECKPOINT("wal_checkpoint", (r) -> Randomly.fromOptions("PASSIVE", "FULL", "RESTART","TRUNCATE"), "PASSIVE",Scope.SESSION);
+
+
+
         private final GenericAction delegate;
         private String defaultVaule = null;
         Action(String name, Function<Randomly, Object> prod,String defaultVaule, Scope... scopes) {

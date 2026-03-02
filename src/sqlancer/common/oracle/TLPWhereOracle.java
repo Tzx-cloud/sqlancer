@@ -1,5 +1,6 @@
 package sqlancer.common.oracle;
 
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -98,15 +99,21 @@ public class TLPWhereOracle<Z extends Select<J, E, T, C>, J extends Join<E, T, C
         }
         boolean canonicalizeString = state.getOptions().canonicalizeSqlString();
         SQLQueryAdapter q = new SQLQueryAdapter(optimizedQueryString, errors, false, canonicalizeString);
+
         SQLancerResultSet result = null;
         try {
+            AFLMonitor.getInstance().executeSQLStatement(optimizedQueryString);
              result = q.executeAndGet(state);
             if (result == null) {
                 throw new IgnoreMeException();
             }
         } catch (Exception e) {
             if (e instanceof IgnoreMeException) {
-                throw e;
+                try {
+                    throw e;
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
 
             if (e.getMessage() == null) {
