@@ -150,6 +150,12 @@ public class MainOptions {
     @Parameter(names = "--canonicalize-sql-strings", description = "Should canonicalize query string (add ';' at the end", arity = 1)
     private boolean canonicalizeSqlString = true; // NOPMD
 
+    @Parameter(names = "--dbms-path", description = "The path to the DBMS executable, which is used to determine the version of the DBMS and to log it for reproducibility")
+    static public String DBMS_PATH = "/usr/local/mysql/bin/mysqld"; // NOPMD
+
+    @Parameter(names = "--map-size", description = "The initial size of the map used for afl")
+    static public int  AFL_MAP_SIZE = 1533718; // NOPMD
+
     public int getMaxExpressionDepth() {
         return maxExpressionDepth;
     }

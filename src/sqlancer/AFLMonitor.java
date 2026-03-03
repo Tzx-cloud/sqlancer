@@ -7,21 +7,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Thread.sleep;
 import static sqlancer.BaseConfigurationGenerator.allParameterCombos;
+import static sqlancer.MainOptions.AFL_MAP_SIZE;
+import static sqlancer.MainOptions.DBMS_PATH;
 
 
 public class AFLMonitor implements AutoCloseable {
     // 常量
-    public static final int MARIADB_MAP_SIZE =  572507;
+    //public static final int MARIADB_MAP_SIZE =  572507;
     //public static final int MYSQL_MAP_SIZE = 1533718;
-    public static final int POSTGRES_MAP_SIZE = 204765;
-    public static final int SQLITE_MAP_SIZE = 57366;
-    public static final int AFL_MAP_SIZE =  57366; // 请根据实际情况修改
+    //public static final int POSTGRES_MAP_SIZE = 204765;
+    //public static final int SQLITE_MAP_SIZE = 57366;
+    //public static final int AFL_MAP_SIZE =  57366; // 请根据实际情况修改
     private static final String AFL_SHM_ENV_VAR = "__AFL_SHM_ID";
     //private static final String   DBMS_PATH= "/usr/local/mariadb_afl/bin/mariadbd";
     //private static final String   DBMS_PATH= "/usr/local/mysql/bin/mysqld"; // 请根据实际路径修改
 
     //private static final String   DBMS_PATH= "/usr/local/pgsql/bin/postgres";
-    private static final String   DBMS_PATH= "/home/tzx/sqlite-src-3510200/sqlite3";
+    //private static final String   DBMS_PATH= "/home/tzx/sqlite-src-3510200/sqlite3";
     // SysV IPC 常量
     private static final int IPC_PRIVATE = 0;
     private static final int IPC_CREAT = 01000;
@@ -171,6 +173,7 @@ public class AFLMonitor implements AutoCloseable {
      */
     public Process startDBMS() throws IOException {
         java.util.List<String> cmd = new java.util.ArrayList<>();
+
         cmd.add(DBMS_PATH);
 //        if (args != null && args.length > 0) {
 //            cmd.addAll(java.util.Arrays.asList(args));
@@ -273,7 +276,7 @@ public class AFLMonitor implements AutoCloseable {
         byte[] oldCoverageBuf = coverageBuf.clone();
         refreshBuffer();
         int newEdges=0;
-        for (int i = 0; i < AFLMonitor.AFL_MAP_SIZE; i++) {
+        for (int i = 0; i < AFL_MAP_SIZE; i++) {
             // 如果一个位置在执行前是0，而执行后非0，说明这是一条新发现的边
             if (oldCoverageBuf[i] == 0 && coverageBuf[i] != 0) {
                 newEdges++;
