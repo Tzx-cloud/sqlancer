@@ -221,7 +221,7 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
             entryURL = entryURL.substring(5);
         }
         String entryDatabaseName = entryPath.substring(1);
-        databaseName = "databasePostgres";
+        databaseName = globalState.getDatabaseName();
 
         try {
             URI uri = new URI(entryURL);

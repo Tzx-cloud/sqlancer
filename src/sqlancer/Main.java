@@ -802,7 +802,7 @@ public final class Main {
         }
 
         //Tang: 2.Testing
-        for (int i = 0; i >=0; i++) {
+        for (int i = 0; i < options.getTotalNumberTries(); i++) {
             final String databaseName = options.getDatabasePrefix() + i;
             final long seed;
             if (options.getRandomSeed() == -1) {
@@ -854,7 +854,6 @@ public final class Main {
             } else {
                 execService.awaitTermination(options.getTimeoutSeconds(), TimeUnit.SECONDS);
             }
-            AFLMonitor.getInstance().close();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

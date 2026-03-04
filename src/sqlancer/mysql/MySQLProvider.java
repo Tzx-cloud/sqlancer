@@ -202,7 +202,7 @@ public class MySQLProvider extends SQLProviderAdapter<MySQLGlobalState, MySQLOpt
         if (port == MainOptions.NO_SET_PORT) {
             port = MySQLOptions.DEFAULT_PORT;
         }
-        String databaseName = "databaseMysql";
+        String databaseName = globalState.getDatabaseName();
         globalState.getState().logStatement("DROP DATABASE IF EXISTS " + databaseName);
         globalState.getState().logStatement("CREATE DATABASE " + databaseName);
         globalState.getState().logStatement("USE " + databaseName);

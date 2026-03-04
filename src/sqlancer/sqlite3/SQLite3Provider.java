@@ -279,12 +279,11 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
         if (!dir.exists()) {
             dir.mkdir();
         }
-        String databaseName = "databaseSqlite3";
-        File dataBase = new File(dir, databaseName + ".db");
+        File dataBase = new File(dir, globalState.getDatabaseName() + ".db");
         if (dataBase.exists() && ((SQLite3GlobalState) globalState).getDbmsSpecificOptions().deleteIfExists) {
             dataBase.delete();
         }
-        File dataBaseAfl = new File(dir, databaseName+ "Afl.db");
+        File dataBaseAfl = new File(dir, globalState.getDatabaseName() + "Afl.db");
         if (dataBaseAfl.exists() && ((SQLite3GlobalState) globalState).getDbmsSpecificOptions().deleteIfExists) {
             dataBaseAfl.delete();
         }
