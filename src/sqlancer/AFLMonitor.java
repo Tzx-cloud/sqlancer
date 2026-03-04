@@ -259,8 +259,8 @@ public class AFLMonitor implements AutoCloseable {
         shmPtr.read(0, coverageBuf, 0, AFL_MAP_SIZE);
     }
 
-    public  double getCoverageRate(){
-       byte[] buf = new byte[AFL_MAP_SIZE];
+    public  Integer getCoverageEdges(){
+        byte[] buf = new byte[AFL_MAP_SIZE];
         shmPtr.read(0, buf, 0, AFL_MAP_SIZE);
         int hitEdges = 0;
         for (int i = 0; i < AFL_MAP_SIZE; i++) {
@@ -269,7 +269,7 @@ public class AFLMonitor implements AutoCloseable {
                 hitEdges++;
             }
         }
-        return (double) hitEdges/AFL_MAP_SIZE;
+        return hitEdges;
     }
 
     public void updateComWeight(List<BaseConfigurationGenerator.ConfigurationAction> actions){
