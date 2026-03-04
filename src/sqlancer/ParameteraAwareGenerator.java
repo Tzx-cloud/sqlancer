@@ -1,5 +1,6 @@
 package sqlancer;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -145,14 +146,7 @@ public class ParameteraAwareGenerator {
     public double[]getFeatureProbabilities() {
         double[] weights = getFeatureWeights();
         double[] probabilities = new double[weights.length];
-        double totalWeightPowered = 0.0;
-
-        for (int i=0;i<weights.length;i++) {
-//            double weight = weights[i];
-//            // Ensure weight is non-negative before applying power
-//            double poweredWeight = Math.pow(Math.max(0, weight), ALPHA);
-            totalWeightPowered += weights[i];
-        }
+        double totalWeightPowered = Arrays.stream(weights).sum();
 
         if (totalWeightPowered == 0) {
             // Fallback to uniform probability if all weights are zero
