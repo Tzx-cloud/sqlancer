@@ -1119,9 +1119,9 @@ public final class Main {
                 DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
                 Date date = new Date();
                 System.out.printf(
-                        "[%s] Executed %d queries (%d queries/s; %.2f/s dbs, successful statements: %2d%%). Threads shut down: %d. Coverage: %2d%%.%n",
+                        "[%s] Executed %d queries (%d queries/s; %.2f/s dbs, successful statements: %2d%%). Threads shut down: %d. Coverage: %.2f%%.%n",
                         dateFormat.format(date), currentNrQueries,  throughout.get(), throughputDbs,
-                        successfulStatementsRatio, threadsShutdown.get(),(long) (AFLMonitor.getInstance().getCoverageRate()*100.0));
+                        successfulStatementsRatio, threadsShutdown.get(),(AFLMonitor.getInstance().getCoverageRate()*100.0));
                 timeMillis = System.currentTimeMillis();
                 lastNrQueries = currentNrQueries;
                 lastNrDbs = currentNrDbs;
