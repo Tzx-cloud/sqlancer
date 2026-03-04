@@ -2,12 +2,11 @@ package sqlancer;
 
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
 
 import static sqlancer.AFLMonitor.coverageBuf;
-import static sqlancer.BaseConfigurationGenerator.allParameterCombos;
 import static sqlancer.BaseConfigurationGenerator.parameterFeatureProbabilities;
+import static sqlancer.MainOptions.AFL_MAP_SIZE;
 
 /**
  * Implements Parameter-Aware Test Case Synthesis.
@@ -16,9 +15,6 @@ import static sqlancer.BaseConfigurationGenerator.parameterFeatureProbabilities;
  */
 public class ParameteraAwareGenerator {
 
-    //    private final GeneralGlobalState globalState;
-    // Temperature parameter α to enhance differentiation. α > 1.
-    private static final double ALPHA = 1.5;
 
     // Data structures to hold counts for probability calculations.
     // In a real scenario, these would be populated by a coverage tracker.
@@ -30,15 +26,13 @@ public class ParameteraAwareGenerator {
     private int testCounts = 0;
     private final long[] featureCounts;
     //
-    private final long[] edgeCounts = new long[AFLMonitor.AFL_MAP_SIZE];
+    private final long[] edgeCounts = new long[AFL_MAP_SIZE];
     // Map<ParameterConfig, Map<GeneratorNode, Map<Edge, Integer>>>
     private final long[][] featureEdgeCounts;
     // Map<Edge, Integer>
-    private final long[] totalEdgeHitCounts = new long[AFLMonitor.AFL_MAP_SIZE];
+    private final long[] totalEdgeHitCounts = new long[AFL_MAP_SIZE];
     public static double[] comActionProbabilities;
 
-//    // Map<ParameterConfig, Integer>
-//    private final Map<String, double[]> totalSamplesPerConfig = new HashMap<>();
 
     /**
      * 构造函数。
@@ -51,7 +45,7 @@ public class ParameteraAwareGenerator {
         }
         int numActions = this.actions.length;
         this.featureCounts = new long[numActions];
-        this.featureEdgeCounts = new long[numActions][AFLMonitor.AFL_MAP_SIZE];
+        this.featureEdgeCounts = new long[numActions][AFL_MAP_SIZE];
         comActionProbabilities = new double[numActions];
     }
     /**
@@ -184,7 +178,7 @@ public class ParameteraAwareGenerator {
         }
 
         // 只遍历一次 coverageBuf
-        for (int i = 0; i < AFLMonitor.AFL_MAP_SIZE; i++) {
+        for (int i = 0; i < AFL_MAP_SIZE; i++) {
             // 仅在覆盖信息不为零时处理
             if (coverageBuf[i] != 0) {
 
