@@ -499,7 +499,7 @@ public final class Main {
             state.setState(stateToRepro);
             logger = new StateLogger(databaseName, provider, options);
             state.setRandomly(r);
-            state.setDatabaseName(databaseName);
+            state.setDatabaseName("fuzzDatabase");
             state.setMainOptions(options);
             state.setDbmsSpecificOptions(command);
             state.setStateLogger(logger);
@@ -802,7 +802,7 @@ public final class Main {
         }
 
         //Tang: 2.Testing
-        for (int i = 0; i < options.getTotalNumberTries(); i++) {
+        for (int i = 0; i >-1; i++) {
             final String databaseName = options.getDatabasePrefix() + i;
             final long seed;
             if (options.getRandomSeed() == -1) {
@@ -854,6 +854,7 @@ public final class Main {
             } else {
                 execService.awaitTermination(options.getTimeoutSeconds(), TimeUnit.SECONDS);
             }
+            AFLMonitor.getInstance().close();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
