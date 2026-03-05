@@ -11,6 +11,7 @@ import sqlancer.common.oracle.CompositeTestOracle;
 import sqlancer.common.oracle.TestOracle;
 import sqlancer.common.schema.AbstractSchema;
 
+import static java.lang.Thread.sleep;
 import static sqlancer.BaseConfigurationGenerator.currentGeneratedActions;
 import static sqlancer.ParameteraAwareGenerator.featureSet;
 
@@ -96,7 +97,7 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
                 generateDefaultConfiguration(globalState, actions.get(0));
                 generateDefaultConfiguration(globalState, actions.get(1));
             }else{
-                AFLMonitor.getInstance().close();
+                sleep(3000);
             }
             globalState.setSchema(null);
             globalState.getConnection().close();
