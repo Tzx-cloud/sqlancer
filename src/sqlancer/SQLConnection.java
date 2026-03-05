@@ -24,6 +24,11 @@ public class SQLConnection implements SQLancerDBConnection {
         connection.close();
     }
 
+    @Override
+    public boolean isValid() throws SQLException {
+        return connection.isValid(1);
+    }
+
     public Statement prepareStatement(String arg) throws SQLException {
         return connection.prepareStatement(arg);
     }

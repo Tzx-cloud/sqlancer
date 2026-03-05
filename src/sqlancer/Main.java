@@ -972,7 +972,7 @@ public final class Main {
                     executor.getStateToReproduce().logStatement(reduce.getMessage()); // add the error statement
                     executor.getStateToReproduce().serialize(executor.getLogger().getReproduceFilePath());
                 }
-                if(AFLMonitor.getInstance().isDBMSAlive()==false){
+                if(!AFLMonitor.getInstance().isDBMSAlive() ||reduce.getMessage().contains("Connection")||reduce.getMessage().contains("connection")||reduce.getMessage().contains("Communications link failure")||reduce.getMessage().contains("communicatons link failure")){
                     try {
                         executor.getLogger().getLogFileWriter().write("This is a crush! \n");
                         executor.getLogger().getLogFileWriter().flush();

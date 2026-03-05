@@ -92,9 +92,11 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
 
         }
         finally {
-            if(AFLMonitor.getInstance().isDBMSAlive()) {
+            if(globalState.getConnection().isValid()) {
                 generateDefaultConfiguration(globalState, actions.get(0));
                 generateDefaultConfiguration(globalState, actions.get(1));
+            }else{
+                AFLMonitor.getInstance().close();
             }
             globalState.setSchema(null);
             globalState.getConnection().close();
