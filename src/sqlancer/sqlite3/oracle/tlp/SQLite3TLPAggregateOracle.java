@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 
+import sqlancer.AFLMonitor;
 import sqlancer.ComparatorHelper;
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
@@ -78,7 +79,9 @@ public class SQLite3TLPAggregateOracle implements TestOracle<SQLite3GlobalState>
         String firstResult;
         String secondResult;
         SQLQueryAdapter q = new SQLQueryAdapter(originalQuery, errors);
+
         try (SQLancerResultSet result = q.executeAndGet(state)) {
+            AFLMonitor.getInstance().executeSQLStatement(originalQuery);
             if (result == null) {
                 throw new IgnoreMeException();
             }
@@ -90,6 +93,7 @@ public class SQLite3TLPAggregateOracle implements TestOracle<SQLite3GlobalState>
 
         SQLQueryAdapter q2 = new SQLQueryAdapter(metamorphicText, errors);
         try (SQLancerResultSet result = q2.executeAndGet(state)) {
+            AFLMonitor.getInstance().executeSQLStatement(metamorphicText);
             if (result == null) {
                 throw new IgnoreMeException();
             }

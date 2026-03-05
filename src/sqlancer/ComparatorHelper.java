@@ -42,6 +42,7 @@ public final class ComparatorHelper {
             // TODO: refactor me
             state.getLogger().writeCurrent(queryString);
             try {
+                AFLMonitor.getInstance().executeSQLStatement(queryString);
                 state.getLogger().getCurrentFileWriter().flush();
             } catch (IOException e) {
                 // TODO Auto-generated catch block

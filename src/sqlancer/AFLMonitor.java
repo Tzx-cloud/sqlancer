@@ -32,8 +32,7 @@ public class AFLMonitor implements AutoCloseable {
 
 
     private BufferedWriter processWriter;
-    private BufferedReader processReader;
-    private BufferedReader processErrorReader;
+
     // JNA 接口
     public interface CLib extends Library {
         CLib INSTANCE = Native.load("c", CLib.class);
@@ -111,8 +110,6 @@ public class AFLMonitor implements AutoCloseable {
                 processWriter.flush();
                 processWriter.close();
             }
-            if (processReader != null) processReader.close();
-            if (processErrorReader != null) processErrorReader.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -213,6 +210,9 @@ public class AFLMonitor implements AutoCloseable {
 
 
         // 发送SQL
+        if(processWriter==null){
+            return;
+        }
         processWriter.write(sql);
         if (!sql.trim().endsWith(";")) {
             processWriter.write(";");
