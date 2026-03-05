@@ -375,51 +375,58 @@ public abstract class BaseConfigurationGenerator  {
         }
     }
 
-    public void topKSnapshot( ) {
+    public void topKSnapshot() {
         weightSum = 0.0;
         int k = parameterFeatureProbabilities.size();
 
-        // Phase 1: forced coverage - best partner for each action
-        Map<Set<ConfigurationAction>, Double> pairWeights = new HashMap<>();
-        for (Map.Entry<Set<ConfigurationAction>, Double> e : allParameterCombos.entrySet()) {
-            if (e.getKey().size() == 2) {
-                pairWeights.put(e.getKey(), e.getValue());
-            }
+        // ── 计算 Per-Parameter Quota ──────────────────────────────────────────
+        // 每个参数在最终集合 S 中最多出现 quota 次，防止强势参数霸占名额
+        int delta = 1;
+        int quota = k/20 + delta;
+        // 记录每个参数已被选中的次数
+        Map<ConfigurationAction, Integer> actionCount = new HashMap<>();
+        for (ConfigurationAction a : parameterFeatureProbabilities.keySet()) {
+            actionCount.put(a, 0);
         }
 
         Set<Set<ConfigurationAction>> selected = new LinkedHashSet<>();
-        for (ConfigurationAction action : getAllActions()) {
-            Set<ConfigurationAction> bestPair = null;
-            double bestWeight = Double.NEGATIVE_INFINITY;
-            for (Map.Entry<Set<ConfigurationAction>, Double> e : pairWeights.entrySet()) {
-                if (e.getKey().contains(action) && e.getValue() > bestWeight) {
-                    bestWeight = e.getValue();
-                    bestPair = e.getKey();
-                }
-            }
-            if (bestPair != null) {
-                selected.add(bestPair);
-            }
-        }
 
 
-        // Phase 2: greedy fill by weight
-        if (selected.size() < k) {
-            List<Map.Entry<Set<ConfigurationAction>, Double>> remaining = new ArrayList<>();
-            for (Map.Entry<Set<ConfigurationAction>, Double> e : allParameterCombos.entrySet()) {
-                if (!selected.contains(e.getKey())) {
-                    remaining.add(e);
-                }
-            }
+        // ── Phase 2: 带 Quota 约束的贪心补全 ─────────────────────────────────
+
+            List<Map.Entry<Set<ConfigurationAction>, Double>> remaining = new ArrayList<>(allParameterCombos.entrySet());
+            // 按权重降序排列
             remaining.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
-            for (Map.Entry<Set<ConfigurationAction>, Double> e : remaining) {
-                if (selected.size() >= k) {
-                    break;
-                }
-                selected.add(e.getKey());
-            }
-        }
 
+            for (Map.Entry<Set<ConfigurationAction>, Double> e : remaining) {
+                if (selected.size() >= k) break;
+
+                // ── Quota 检查：组合中任何一个参数超出 quota 则跳过 ──
+                boolean quotaExceeded = false;
+                for (ConfigurationAction a : e.getKey()) {
+                    if (actionCount.getOrDefault(a, 0) >= quota) {
+                        quotaExceeded = true;
+                        break;
+                    }
+                }
+                if (quotaExceeded) continue;
+
+                selected.add(e.getKey());
+                for (ConfigurationAction a : e.getKey()) {
+                    actionCount.merge(a, 1, Integer::sum);
+                }
+            }
+
+            // ── Quota 放宽兜底：若因约束导致 selected 不足 k，放开限制补全 ──
+            if (selected.size() < k) {
+                for (Map.Entry<Set<ConfigurationAction>, Double> e : remaining) {
+                    if (selected.size() >= k) break;
+                    selected.add(e.getKey());
+                }
+            }
+
+
+        // ── 汇总结果 ──────────────────────────────────────────────────────────
         Map<Set<ConfigurationAction>, Double> top = new HashMap<>(selected.size());
         for (Set<ConfigurationAction> s : selected) {
             double w = allParameterCombos.getOrDefault(s, 0.0);
