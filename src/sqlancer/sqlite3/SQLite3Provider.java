@@ -115,37 +115,37 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
         Randomly r = globalState.getRandomly();
         switch (a) {
         case CREATE_VIEW:
-            nrPerformed = r.getInteger(0, 2);
+            nrPerformed = r.getInteger(0, 1);
             break;
         case DELETE:
         case DROP_VIEW:
         case DROP_INDEX:
-            nrPerformed = r.getInteger(0, 0);
+            nrPerformed = r.getInteger(0, 1);
             break;
         case ALTER:
-            nrPerformed = r.getInteger(0, 0);
+            nrPerformed = r.getInteger(0, 1);
             break;
         case EXPLAIN:
         case CREATE_TRIGGER:
         case DROP_TABLE:
-            nrPerformed = r.getInteger(0, 0);
+            nrPerformed = r.getInteger(0, 1);
             break;
         case VACUUM:
         case CHECK_RTREE_TABLE:
-            nrPerformed = r.getInteger(0, 3);
+            nrPerformed = r.getInteger(0, 2);
             break;
         case INSERT:
             nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
             break;
         case MANIPULATE_STAT_TABLE:
-            nrPerformed = r.getInteger(0, 5);
+            nrPerformed = r.getInteger(0, 2);
             break;
         case CREATE_INDEX:
-            nrPerformed = r.getInteger(0, 5);
+            nrPerformed = r.getInteger(0, 2);
             break;
         case VIRTUAL_TABLE_ACTION:
         case UPDATE:
-            nrPerformed = r.getInteger(0, 30);
+            nrPerformed = r.getInteger(0, 10);
             break;
 //        case PRAGMA:
 //            nrPerformed = r.getInteger(0, 20);
@@ -161,7 +161,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
         case ROLLBACK_TRANSACTION:
         case COMMIT:
         default:
-            nrPerformed = r.getInteger(1, 10);
+            nrPerformed = r.getInteger(1, 5);
             break;
         }
         return nrPerformed;

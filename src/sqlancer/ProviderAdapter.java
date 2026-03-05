@@ -59,14 +59,13 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
         parameterAwareGenerator.chooseFeature(actions);
 
         try {
-            generateDatabase(globalState);
             checkViewsAreValid(globalState);
             globalState.getManager().incrementCreateDatabase();
-
             TestOracle<G> testOracle = testOracleFactory.get(0).create(globalState);
             for (int i = 0; i < BaseConfigurationGenerator.TRAINING_SAMPLES; i++) {
                 generateConfiguration(globalState, actions.get(0));
                 generateConfiguration(globalState, actions.get(1));
+                generateDatabase(globalState);
                 long startTime = System.currentTimeMillis();
                 long durationMillis = 15000; // 15 秒
                 while (System.currentTimeMillis() - startTime < durationMillis) {
@@ -93,8 +92,10 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
 
         }
         finally {
-            generateDefaultConfiguration(globalState, actions.get(0));
-            generateDefaultConfiguration(globalState, actions.get(1));
+            if(AFLMonitor.getInstance().isDBMSAlive()) {
+                generateDefaultConfiguration(globalState, actions.get(0));
+                generateDefaultConfiguration(globalState, actions.get(1));
+            }
             globalState.setSchema(null);
             globalState.getConnection().close();
         }

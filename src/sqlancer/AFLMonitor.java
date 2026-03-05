@@ -265,7 +265,7 @@ public class AFLMonitor implements AutoCloseable {
         int hitEdges = 0;
         for (int i = 0; i < AFL_MAP_SIZE; i++) {
             int v = buf[i] & 0xFF;
-            if (v > 0) {
+            if (v != 0) {
                 hitEdges++;
             }
         }

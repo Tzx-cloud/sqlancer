@@ -802,7 +802,7 @@ public final class Main {
         }
 
         //Tang: 2.Testing
-        for (int i = 0; i >-1; i++) {
+        for (int i = 0; i >-1;i++) {
             final String databaseName = options.getDatabasePrefix() + i;
             final long seed;
             if (options.getRandomSeed() == -1) {
@@ -814,7 +814,9 @@ public final class Main {
            executor = executorFactory.getDBMSExecutor(databaseName, r);
             try {
                 executor.runConfigurationTesting();
+                i--;
             } catch (IgnoreMeException e) {
+                i--;
                 continue;
             } catch (Throwable reduce) {
                 bugs.addAndGet(1);
