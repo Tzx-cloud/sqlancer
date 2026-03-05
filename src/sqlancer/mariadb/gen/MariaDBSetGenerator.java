@@ -537,7 +537,7 @@ public class MariaDBSetGenerator extends BaseConfigurationGenerator {
         SECURE_AUTH("secure_auth", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL), //
         // SECURE_FILE_PRIV("secure_file_priv", (r) -> r.getString(), Scope.GLOBAL), //
         //SECURE_TIMESTAMP("secure_timestamp", (r) -> Randomly.fromOptions("NO", "YES", "SUPER"), Scope.GLOBAL), //
-        SERVER_ID("server_id", (r) -> r.getLongWithBoundaryBias(1, 4294967295L), Scope.GLOBAL), //
+        //SERVER_ID("server_id", (r) -> r.getLongWithBoundaryBias(1, 4294967295L), Scope.GLOBAL), //
         //SERVER_UID("server_uid", (r) -> r.getString(), Scope.GLOBAL), //
         SESSION_TRACK_SCHEMA("session_track_schema", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //
         SESSION_TRACK_STATE_CHANGE("session_track_state_change", (r) -> Randomly.fromOptions("OFF", "ON"), Scope.GLOBAL, Scope.SESSION), //

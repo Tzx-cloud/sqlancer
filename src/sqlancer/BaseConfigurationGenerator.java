@@ -364,7 +364,7 @@ public abstract class BaseConfigurationGenerator  {
     }
 
     public void generateActions() {
-        if(Randomly.getBooleanWithSmallProbability()) {
+        if(Randomly.getPercentage()<0.3) {
             Set randomActionSet = Randomly.fromOptions(allParameterCombos.keySet().toArray(new Set[0]));
             while (proParameterCombos.containsKey(randomActionSet)) {
                 randomActionSet = Randomly.fromOptions(allParameterCombos.keySet().toArray(new Set[0]));
