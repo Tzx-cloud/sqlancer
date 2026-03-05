@@ -117,7 +117,7 @@ public class AFLMonitor implements AutoCloseable {
             e.printStackTrace();
         }
         if (dbmsProcess != null && dbmsProcess.isAlive()) {
-            sleep(3000);
+            //sleep(3000);
             dbmsProcess.destroy(); // 发送 SIGTERM
             try {
                 if (!dbmsProcess.waitFor(3, java.util.concurrent.TimeUnit.SECONDS)) {
@@ -189,18 +189,16 @@ public class AFLMonitor implements AutoCloseable {
         env.put("AFL_IGNORE_PROBLEMS", "1");
         env.put("AFL_DEBUG", "1");
 
-        if(DBMS_PATH.contains("postgres")){
+        if(DBMS_PATH.contains("postgres")||DBMS_PATH.contains("sqlite")){
             pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
             pb.redirectError(ProcessBuilder.Redirect.DISCARD);
-        }else if(!DBMS_PATH.contains("sqlite")){
+        }else {
             pb.inheritIO();
         }
 
         // 可根据需要切换到数据目录:
         // pb.directory(new java.io.File("/path/to/mysql/base"))
         // 直接在当前控制台输出
-        pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
-        pb.redirectError(ProcessBuilder.Redirect.DISCARD);
         Process process = pb.start();
         if(DBMS_PATH.contains("sqlite")){
             processWriter = new BufferedWriter(
