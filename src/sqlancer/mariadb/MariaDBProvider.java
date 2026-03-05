@@ -66,10 +66,10 @@ public class MariaDBProvider extends SQLProviderAdapter<MariaDBGlobalState, Mari
             case ANALYZE_TABLE:
             case UPDATE:
             case CREATE_INDEX:
-                nrPerformed = globalState.getRandomly().getInteger(0, 2);
+                nrPerformed = globalState.getRandomly().getInteger(0, 1);
                 break;
             case DELETE:
-                nrPerformed = globalState.getRandomly().getInteger(0, 2);
+                nrPerformed = globalState.getRandomly().getInteger(0, 1);
                 break;
 //            case SET:
 //                nrPerformed = 20;

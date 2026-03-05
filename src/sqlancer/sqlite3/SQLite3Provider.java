@@ -366,6 +366,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
         int nrTries = 0;
         do {
             SQLQueryAdapter config = globalState.getConfigurationGenerator().generateConfigForParameter(action);
+            AFLMonitor.getInstance().executeSQLStatement(config.getQueryString());
             success =  globalState.executeStatement( config);
             System.out.println(config.getQueryString());
         } while (!success && nrTries++ < 100);
@@ -377,6 +378,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
         int nrTries = 0;
         do {
             SQLQueryAdapter config = globalState.getConfigurationGenerator().generateDefaultConfigForParameter(action);
+            AFLMonitor.getInstance().executeSQLStatement(config.getQueryString());
             success =  globalState.executeStatement( config);
             System.out.println(config.getQueryString());
         } while (!success && nrTries++ < 100);

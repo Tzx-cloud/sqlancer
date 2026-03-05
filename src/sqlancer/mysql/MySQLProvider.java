@@ -70,7 +70,7 @@ public class MySQLProvider extends SQLProviderAdapter<MySQLGlobalState, MySQLOpt
         int nrPerformed = 0;
         switch (a) {
         case DROP_INDEX:
-            nrPerformed = r.getInteger(0, 2);
+            nrPerformed = r.getInteger(0, 1);
             break;
         case SHOW_TABLES:
             nrPerformed = r.getInteger(0, 1);
@@ -101,22 +101,22 @@ public class MySQLProvider extends SQLProviderAdapter<MySQLGlobalState, MySQLOpt
         case CHECKSUM:
         case CHECK_TABLE:
         case ANALYZE_TABLE:
-            nrPerformed = r.getInteger(0, 2);
+            nrPerformed = r.getInteger(0, 1);
             break;
         case ALTER_TABLE:
-            nrPerformed = r.getInteger(0, 5);
-            break;
-        case TRUNCATE_TABLE:
             nrPerformed = r.getInteger(0, 2);
             break;
+        case TRUNCATE_TABLE:
+            nrPerformed = r.getInteger(0, 1);
+            break;
         case SELECT_INFO:
-            nrPerformed = r.getInteger(0, 10);
+            nrPerformed = r.getInteger(0, 5);
             break;
         case UPDATE:
-            nrPerformed = r.getInteger(0, 10);
+            nrPerformed = r.getInteger(0, 5);
             break;
         case DELETE:
-            nrPerformed = r.getInteger(0, 10);
+            nrPerformed = r.getInteger(0, 5);
             break;
         default:
             throw new AssertionError(a);
