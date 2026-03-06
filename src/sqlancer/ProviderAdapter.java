@@ -68,7 +68,7 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
                 generateConfiguration(globalState, actions.get(1));
                 generateDatabase(globalState);
                 long startTime = System.currentTimeMillis();
-                long durationMillis = 15000; // 15 秒
+                long durationMillis = 5000; // 5 秒
                 while (System.currentTimeMillis() - startTime < durationMillis) {
                     try (OracleRunReproductionState localState = globalState.getState().createLocalState()) {
                         assert localState != null;

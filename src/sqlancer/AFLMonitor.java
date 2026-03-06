@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Thread.sleep;
 import static sqlancer.BaseConfigurationGenerator.allParameterCombos;
+import static sqlancer.Main.nrQueries;
 import static sqlancer.MainOptions.AFL_MAP_SIZE;
 import static sqlancer.MainOptions.DBMS_PATH;
 
@@ -29,7 +30,7 @@ public class AFLMonitor implements AutoCloseable {
     private static final int IPC_CREAT = 01000;
     private static final int IPC_RMID = 0;
     private final double alpha = 0.4; // 用于权重更新的学习率
-
+    private static long allNewEdges=0;
 
     private BufferedWriter processWriter;
 
@@ -276,11 +277,12 @@ public class AFLMonitor implements AutoCloseable {
         int newEdges=0;
         for (int i = 0; i < AFL_MAP_SIZE; i++) {
             // 如果一个位置在执行前是0，而执行后非0，说明这是一条新发现的边
-            if (oldCoverageBuf[i] == 0 && coverageBuf[i] != 0) {
-                newEdges++;
+            if(coverageBuf[i]!=0&&oldCoverageBuf[i]==0){
+                    newEdges++;
             }
         }
 
+        allNewEdges+=newEdges;
         // 1. 正确地从 List 创建 Set 作为键
         Set<BaseConfigurationGenerator.ConfigurationAction> key = new HashSet<>(actions);
 
@@ -289,7 +291,9 @@ public class AFLMonitor implements AutoCloseable {
 
         // 3. 检查 weight 是否为 null，避免 NullPointerException
         if (weight != null) {
-            weight *= (1.0 + alpha * newEdges / (testcaseNum + 1.0));
+            double value = ((newEdges + 1.0) * nrQueries.get())
+                    / ((testcaseNum + 1.0) * (allNewEdges + 1.0));
+            weight *= Math.pow(value, 0.6);  // GAMMA 建议 0.5 ~ 1.0
             // 4. 使用相同的键来更新 Map
             allParameterCombos.replace(key, weight);
         } else {

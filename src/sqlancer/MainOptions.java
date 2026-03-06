@@ -145,7 +145,7 @@ public class MainOptions {
     private long maxStatementReduceTime = NO_REDUCE_LIMIT; // NOPMD
 
     @Parameter(names = "--validate-result-size-only", description = "Should validate result size only and skip comparing content of the result set ", arity = 1)
-    private boolean validateResultSizeOnly = false; // NOPMD
+    private boolean validateResultSizeOnly = true; // NOPMD
 
     @Parameter(names = "--canonicalize-sql-strings", description = "Should canonicalize query string (add ';' at the end", arity = 1)
     private boolean canonicalizeSqlString = true; // NOPMD
