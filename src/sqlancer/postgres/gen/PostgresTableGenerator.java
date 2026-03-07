@@ -57,6 +57,7 @@ public class PostgresTableGenerator {
         errors.add("inherits from generated column but specifies default");
         errors.add("invalid LC_CTYPE locale name");
         errors.add("already exists");
+        errors.add("has a storage parameter conflict");
         PostgresCommon.addCommonExpressionErrors(errors);
         PostgresCommon.addCommonTableErrors(errors);
     }
