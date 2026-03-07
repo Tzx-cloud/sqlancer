@@ -16,7 +16,7 @@ public final class MySQLErrors {
 
         errors.add("BIGINT value is out of range"); // e.g., CAST(-('-1e500') AS SIGNED)
         errors.add("is not valid for CHARACTER SET");
-
+        errors.add("read-only");
         if (MySQLBugs.bug111471) {
             errors.add("Memory capacity exceeded");
         }
