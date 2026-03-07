@@ -82,6 +82,7 @@ public final class PostgresCommon {
         errors.add("a negative number raised to a non-integer power yields a complex result");
         errors.add("could not determine polymorphic type because input has type unknown");
         errors.add("character number must be positive");
+        errors.add("specified more than once");
         errors.addAll(getToCharFunctionErrors());
         errors.addAll(getBitStringOperationErrors());
         errors.addAll(getFunctionErrors());
@@ -215,7 +216,7 @@ public final class PostgresCommon {
         errors.add("must appear in the GROUP BY clause or be used in an aggregate function");
         errors.add("is not in select list");
         errors.add("aggregate functions are not allowed in GROUP BY");
-
+        errors.add("specified more than once");
         return errors;
     }
 
