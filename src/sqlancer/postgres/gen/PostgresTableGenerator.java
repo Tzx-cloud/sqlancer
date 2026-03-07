@@ -58,6 +58,7 @@ public class PostgresTableGenerator {
         errors.add("invalid LC_CTYPE locale name");
         errors.add("already exists");
         errors.add("has a storage parameter conflict");
+        errors.add("partitioned tables cannot be unlogged");
         PostgresCommon.addCommonExpressionErrors(errors);
         PostgresCommon.addCommonTableErrors(errors);
     }
