@@ -66,7 +66,10 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
             for (int i = 0; i < BaseConfigurationGenerator.TRAINING_SAMPLES; i++) {
                 generateConfiguration(globalState, actions.get(0));
                 generateConfiguration(globalState, actions.get(1));
-                generateDatabase(globalState);
+                if(i==0){
+                    generateDatabase(globalState);
+                }
+
                 long startTime = System.currentTimeMillis();
                 long durationMillis = 5000; // 5 秒
                 while (System.currentTimeMillis() - startTime < durationMillis) {
