@@ -55,6 +55,8 @@ public class PostgresTableGenerator {
         errors.add("no collation was derived for partition key column");
         errors.add("inherits from generated column but specifies identity");
         errors.add("inherits from generated column but specifies default");
+        errors.add("invalid LC_CTYPE locale name");
+        errors.add("already exists");
         PostgresCommon.addCommonExpressionErrors(errors);
         PostgresCommon.addCommonTableErrors(errors);
     }

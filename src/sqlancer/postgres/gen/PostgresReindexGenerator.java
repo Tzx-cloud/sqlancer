@@ -21,7 +21,8 @@ public final class PostgresReindexGenerator {
 
     public static SQLQueryAdapter create(PostgresGlobalState globalState) {
         ExpectedErrors errors = new ExpectedErrors();
-        errors.add("could not create unique index"); // CONCURRENT INDEX
+        errors.add("could not create unique index");
+        errors.add("can only reindex the currently open database");// CONCURRENT INDEX
         StringBuilder sb = new StringBuilder();
         sb.append("REINDEX");
         // if (Randomly.getBoolean()) {

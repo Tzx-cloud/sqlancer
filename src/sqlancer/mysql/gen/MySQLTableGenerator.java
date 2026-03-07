@@ -12,6 +12,7 @@ import sqlancer.common.DBMSCommon;
 import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mysql.MySQLBugs;
+import sqlancer.mysql.MySQLErrors;
 import sqlancer.mysql.MySQLGlobalState;
 import sqlancer.mysql.MySQLSchema;
 import sqlancer.mysql.MySQLSchema.MySQLDataType;
@@ -81,6 +82,7 @@ public class MySQLTableGenerator {
                 return new SQLQueryAdapter(sb.toString(), errors, true);
             }
             addCommonErrors(errors);
+            MySQLErrors.addExpressionErrors(errors);
             return new SQLQueryAdapter(sb.toString(), errors, true);
         }
 

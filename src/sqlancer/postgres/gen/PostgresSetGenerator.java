@@ -243,7 +243,7 @@ public final class PostgresSetGenerator extends BaseConfigurationGenerator {
         TRACE_SORT("trace_sort", (r) -> Randomly.fromOptions("on", "off")), //
         TRACK_ACTIVITIES("track_activities", (r) -> Randomly.fromOptions("on", "off")), //
         TRACK_COUNTS("track_counts", (r) -> Randomly.fromOptions("on", "off")), //
-        TRACK_FUNCTIONS("track_functions", (r) -> Randomly.fromOptions("none", "pl", "all")), //
+        TRACK_FUNCTIONS("track_functions", (r) -> Randomly.fromOptions("'none'", "'pl'", "'all'")), //
         TRACK_IO_TIMING("track_io_timing", (r) -> Randomly.fromOptions("on", "off")), //
         TRACK_WAL_IO_TIMING("track_wal_io_timing", (r) -> Randomly.fromOptions("on", "off")), //
         //TRANSACTION_DEFERRABLE("transaction_deferrable", (r) -> Randomly.fromOptions("on", "off")), //

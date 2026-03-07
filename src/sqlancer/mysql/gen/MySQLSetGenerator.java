@@ -10,8 +10,10 @@ import java.util.stream.Collectors;
 import sqlancer.BaseConfigurationGenerator;
 import sqlancer.MainOptions;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mysql.MySQLBugs;
+import sqlancer.mysql.MySQLErrors;
 import sqlancer.mysql.MySQLGlobalState;
 
 public class MySQLSetGenerator extends BaseConfigurationGenerator {
@@ -37,12 +39,12 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
     }
     @Override
     protected String getActionName(Object action) {
-        return ((MySQLSetGenerator.Action) action).name();
+        return ((Action) action).name();
     }
 
     @Override
     public  ConfigurationAction[] getAllActions() {
-        return MySQLSetGenerator.Action.values();
+        return Action.values();
     }
 
 
@@ -60,7 +62,9 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         sb.append(" = ");
         sb.append(action.generateValue(r));
 
-        return new SQLQueryAdapter(sb.toString());
+        ExpectedErrors errors = new ExpectedErrors();
+        MySQLErrors.addExpressionErrors(errors);
+        return new SQLQueryAdapter(sb.toString(),errors);
     }
 
     private SQLQueryAdapter get() {
@@ -110,8 +114,9 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         sb.append(" ");
         sb.append(action.getName());
         sb.append(" = DEFAULT");
-
-        return new SQLQueryAdapter(sb.toString());
+        ExpectedErrors errors = new ExpectedErrors();
+        MySQLErrors.addExpressionErrors(errors);
+        return new SQLQueryAdapter(sb.toString(),errors);
     }
 
     public static BaseConfigurationGenerator getInstance(Randomly r, MainOptions options) {

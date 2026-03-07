@@ -43,7 +43,9 @@ public final class PostgresStatisticsGenerator {
         sb.append(randomColumns.stream().map(c -> c.getName()).collect(Collectors.joining(", ")));
         sb.append(" FROM ");
         sb.append(randomTable.getName());
-        return new SQLQueryAdapter(sb.toString(), ExpectedErrors.from("cannot have more than 8 columns in statistics"),
+        return new SQLQueryAdapter(sb.toString(), ExpectedErrors.from(
+                "cannot have more than 8 columns in statistics",
+                "duplicate column name in statistics definition"),
                 true);
     }
 

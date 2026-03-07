@@ -3,12 +3,7 @@ package sqlancer.postgres;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import sqlancer.Randomly;
 import sqlancer.SQLConnection;
@@ -47,6 +42,7 @@ public class PostgresGlobalState extends SQLGlobalState<PostgresOptions, Postgre
             try (ResultSet rs = s
                     .executeQuery("SELECT collname FROM pg_collation WHERE collname LIKE '%utf8' or collname = 'C';")) {
                 while (rs.next()) {
+                    if(Objects.equals(rs.getString(1), "pg_c_utf8"))continue;
                     collNames.add(rs.getString(1));
                 }
             }

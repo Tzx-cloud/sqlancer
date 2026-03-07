@@ -214,7 +214,7 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         password = globalState.getOptions().getPassword();
         host = globalState.getOptions().getHost();
         port = globalState.getOptions().getPort();
-        entryPath = "/root";
+        entryPath = "/fuzzDatabase";
         entryURL = globalState.getDbmsSpecificOptions().connectionURL;
         // trim URL to exclude "jdbc:"
         if (entryURL.startsWith("jdbc:")) {

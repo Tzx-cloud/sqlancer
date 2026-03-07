@@ -39,6 +39,7 @@ public final class PostgresInsertGenerator {
         errors.add("new row violates check option for view");
         errors.add("reached maximum value of sequence");
         errors.add("but expression is of type");
+        errors.add("specified more than once");
         StringBuilder sb = new StringBuilder();
         sb.append("INSERT INTO ");
         sb.append(table.getName());

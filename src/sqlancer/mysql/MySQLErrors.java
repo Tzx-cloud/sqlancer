@@ -16,11 +16,13 @@ public final class MySQLErrors {
 
         errors.add("BIGINT value is out of range"); // e.g., CAST(-('-1e500') AS SIGNED)
         errors.add("is not valid for CHARACTER SET");
-        errors.add("read-only");
+        errors.add("so it cannot execute this statement");
         if (MySQLBugs.bug111471) {
             errors.add("Memory capacity exceeded");
         }
-
+        errors.add("Incorrect DECIMAL value:");
+        errors.add("Cannot drop default keycache");
+        errors.add("cannot contain a COMPRESSED table");
         return errors;
     }
 
@@ -54,6 +56,7 @@ public final class MySQLErrors {
         errors.add("cannot be null");
         errors.add("Incorrect decimal value");
         errors.add("The value specified for generated column");
+        errors.add("The query does not comply with variable require_row_format restrictions");
 
         return errors;
     }
