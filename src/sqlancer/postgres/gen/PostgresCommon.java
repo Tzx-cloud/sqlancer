@@ -83,6 +83,8 @@ public final class PostgresCommon {
         errors.add("could not determine polymorphic type because input has type unknown");
         errors.add("character number must be positive");
         errors.add("specified more than once");
+        errors.add("is incompatible with other formats");
+        errors.add("argument of HAVING must be type boolean, not type");
         errors.addAll(getToCharFunctionErrors());
         errors.addAll(getBitStringOperationErrors());
         errors.addAll(getFunctionErrors());
