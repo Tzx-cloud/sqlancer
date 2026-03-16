@@ -12,7 +12,7 @@ public class TestMySQLFuzzing {
 
     @Test
     public void testMySQLFuzzing() throws InterruptedException {
-        String[] args={"sqlite3","--oracle","WHERE"};
+        String[] args={"--dbms-path","/home/tzx/sqlite-src-3510200/sqlite3","--map-size","57366","sqlite3","--oracle","WHERE"};
 
         Main.main(args);
         //Main.executeMainOnWeb(args);

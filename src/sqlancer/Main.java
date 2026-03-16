@@ -48,7 +48,6 @@ import sqlancer.tidb.TiDBProvider;
 import sqlancer.yugabyte.ycql.YCQLProvider;
 import sqlancer.yugabyte.ysql.YSQLProvider;
 
-import static java.lang.Thread.activeCount;
 import static java.lang.Thread.sleep;
 import static sqlancer.BaseConfigurationGenerator.currentGeneratedActions;
 

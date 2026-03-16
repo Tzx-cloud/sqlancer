@@ -13,7 +13,6 @@ import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mariadb.MariaDBBugs;
 import sqlancer.mariadb.MariaDBProvider.MariaDBGlobalState;
-import sqlancer.mysql.gen.MySQLSetGenerator;
 
 public class MariaDBSetGenerator extends BaseConfigurationGenerator {
     private static volatile MariaDBSetGenerator INSTANCE;

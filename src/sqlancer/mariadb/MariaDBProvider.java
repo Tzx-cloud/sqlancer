@@ -14,8 +14,6 @@ import sqlancer.common.DBMSCommon;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mariadb.MariaDBProvider.MariaDBGlobalState;
 import sqlancer.mariadb.gen.*;
-import sqlancer.mysql.MySQLGlobalState;
-import sqlancer.mysql.gen.MySQLExpressionGenerator;
 
 @AutoService(DatabaseProvider.class)
 public class MariaDBProvider extends SQLProviderAdapter<MariaDBGlobalState, MariaDBOptions> {

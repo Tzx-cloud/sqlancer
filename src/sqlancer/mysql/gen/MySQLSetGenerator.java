@@ -12,7 +12,6 @@ import sqlancer.MainOptions;
 import sqlancer.Randomly;
 import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.SQLQueryAdapter;
-import sqlancer.mysql.MySQLBugs;
 import sqlancer.mysql.MySQLErrors;
 import sqlancer.mysql.MySQLGlobalState;
 
@@ -54,7 +53,6 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
         sb.append("SET ");
 
         // 选择作用域
-        Scope[] scopes = action.getScopes();
         sb.append(action.getScopes()[0]);
 
         sb.append(" ");

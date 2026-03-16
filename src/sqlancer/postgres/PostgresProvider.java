@@ -23,7 +23,6 @@ import sqlancer.common.DBMSCommon;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.common.query.SQLQueryProvider;
 import sqlancer.common.query.SQLancerResultSet;
-import sqlancer.mariadb.gen.MariaDBExpressionGenerator;
 import sqlancer.postgres.gen.*;
 
 // EXISTS

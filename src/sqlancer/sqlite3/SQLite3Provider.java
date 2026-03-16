@@ -17,8 +17,6 @@ import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.common.query.SQLQueryProvider;
 import sqlancer.common.query.SQLancerResultSet;
-import sqlancer.mysql.MySQLGlobalState;
-import sqlancer.postgres.gen.PostgresExpressionGenerator;
 import sqlancer.sqlite3.gen.*;
 import sqlancer.sqlite3.gen.ddl.SQLite3AlterTable;
 import sqlancer.sqlite3.gen.ddl.SQLite3CreateTriggerGenerator;
@@ -102,7 +100,9 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
 
         @Override
         public SQLQueryAdapter getQuery(SQLite3GlobalState state) throws Exception {
-            return sqlQueryProvider.getQuery(state);
+            SQLQueryAdapter query = sqlQueryProvider.getQuery(state);
+            AFLMonitor.getInstance().executeSQLStatement(query.getQueryString());
+            return query;
         }
     }
 
@@ -186,6 +186,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
             do {
                 SQLQueryAdapter tableQuery = getTableQuery(globalState, i++);
                 globalState.executeStatement(tableQuery);
+                AFLMonitor.getInstance().executeSQLStatement(tableQuery.getQueryString());
             } while (globalState.getSchema().getDatabaseTables().size() < nrTablesToCreate);
             assert globalState.getSchema().getTables().getTables().size() == nrTablesToCreate;
             checkTablesForGeneratedColumnLoops(globalState);
@@ -193,6 +194,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
                 SQLQueryAdapter tableQuery = new SQLQueryAdapter(
                         "CREATE VIRTUAL TABLE IF NOT EXISTS stat USING dbstat(main)");
                 globalState.executeStatement(tableQuery);
+                AFLMonitor.getInstance().executeSQLStatement(tableQuery.getQueryString());
             }
             StatementExecutor<SQLite3GlobalState, Action> se = new StatementExecutor<>(globalState, Action.values(),
                     SQLite3Provider::mapActions, (q) -> {
@@ -204,10 +206,11 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
 
             SQLQueryAdapter query = SQLite3TransactionGenerator.generateCommit(globalState);
             globalState.executeStatement(query);
-
+            AFLMonitor.getInstance().executeSQLStatement(query.getQueryString());
             // also do an abort for DEFERRABLE INITIALLY DEFERRED
             query = SQLite3TransactionGenerator.generateRollbackTransaction(globalState);
             globalState.executeStatement(query);
+            AFLMonitor.getInstance().executeSQLStatement(query.getQueryString());
         }
     }
 
@@ -270,6 +273,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
         }
         for (String s : pragmasToExecute) {
             globalState.executeStatement(new SQLQueryAdapter(s));
+            AFLMonitor.getInstance().executeSQLStatement(s);
         }
     }
 

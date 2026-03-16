@@ -2,13 +2,9 @@ package sqlancer.sqlite3;
 
 import sqlancer.AFLMonitor;
 import sqlancer.SQLConnection;
-import sqlancer.common.query.ExpectedErrors;
-import sqlancer.common.query.SQLQueryAdapter;
 
 import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 public class SQLite3AFLConnection extends SQLConnection {
     public static String databaseName;

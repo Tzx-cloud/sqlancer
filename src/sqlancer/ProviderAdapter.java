@@ -1,7 +1,6 @@
 package sqlancer;
 
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -12,7 +11,6 @@ import sqlancer.common.oracle.TestOracle;
 import sqlancer.common.schema.AbstractSchema;
 
 import static java.lang.Thread.sleep;
-import static sqlancer.BaseConfigurationGenerator.currentGeneratedActions;
 import static sqlancer.ParameteraAwareGenerator.featureSet;
 
 public abstract class ProviderAdapter<G extends GlobalState<O, ? extends AbstractSchema<G, ?>, C>, O extends DBMSSpecificOptions<? extends OracleFactory<G>>, C extends SQLancerDBConnection>

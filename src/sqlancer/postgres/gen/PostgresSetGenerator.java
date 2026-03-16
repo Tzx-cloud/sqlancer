@@ -8,7 +8,6 @@ import sqlancer.BaseConfigurationGenerator;
 import sqlancer.MainOptions;
 import sqlancer.Randomly;
 import sqlancer.common.query.SQLQueryAdapter;
-import sqlancer.mysql.gen.MySQLSetGenerator;
 import sqlancer.postgres.PostgresGlobalState;
 
 public final class PostgresSetGenerator extends BaseConfigurationGenerator {

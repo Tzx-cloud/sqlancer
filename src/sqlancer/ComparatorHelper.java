@@ -42,7 +42,6 @@ public final class ComparatorHelper {
             // TODO: refactor me
             state.getLogger().writeCurrent(queryString);
             try {
-                AFLMonitor.getInstance().executeSQLStatement(queryString);
                 state.getLogger().getCurrentFileWriter().flush();
             } catch (IOException e) {
                 // TODO Auto-generated catch block
@@ -164,7 +163,7 @@ public final class ComparatorHelper {
 
     public static List<String> getCombinedResultSetNoDuplicates(String firstQueryString, String secondQueryString,
             String thirdQueryString, List<String> combinedString, boolean asUnion, SQLGlobalState<?, ?> state,
-            ExpectedErrors errors) throws SQLException {
+            ExpectedErrors errors) throws SQLException{
         String unionString;
         if (asUnion) {
             unionString = firstQueryString + " UNION " + secondQueryString + " UNION " + thirdQueryString;

@@ -5,7 +5,6 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.lang.Thread.sleep;
 import static sqlancer.BaseConfigurationGenerator.allParameterCombos;
 import static sqlancer.Main.nrQueries;
 import static sqlancer.MainOptions.AFL_MAP_SIZE;

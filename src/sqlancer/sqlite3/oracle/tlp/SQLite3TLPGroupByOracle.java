@@ -1,10 +1,12 @@
 package sqlancer.sqlite3.oracle.tlp;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import sqlancer.AFLMonitor;
 import sqlancer.ComparatorHelper;
 import sqlancer.Randomly;
 import sqlancer.sqlite3.SQLite3GlobalState;
@@ -27,19 +29,26 @@ public class SQLite3TLPGroupByOracle extends SQLite3TLPBase {
         select.setWhereClause(null);
         String originalQueryString = SQLite3Visitor.asString(select);
         generatedQueryString = originalQueryString;
-        List<String> resultSet = ComparatorHelper.getResultSetFirstColumnAsString(originalQueryString, errors, state);
+        try {
+            AFLMonitor.getInstance().executeSQLStatement( generatedQueryString);
+            List<String> resultSet = ComparatorHelper.getResultSetFirstColumnAsString(originalQueryString, errors, state);
 
-        select.setWhereClause(predicate);
-        String firstQueryString = SQLite3Visitor.asString(select);
-        select.setWhereClause(negatedPredicate);
-        String secondQueryString = SQLite3Visitor.asString(select);
-        select.setWhereClause(isNullPredicate);
-        String thirdQueryString = SQLite3Visitor.asString(select);
-        List<String> combinedString = new ArrayList<>();
-        List<String> secondResultSet = ComparatorHelper.getCombinedResultSetNoDuplicates(firstQueryString,
-                secondQueryString, thirdQueryString, combinedString, true, state, errors);
-        ComparatorHelper.assumeResultSetsAreEqual(resultSet, secondResultSet, originalQueryString, combinedString,
-                state);
+            select.setWhereClause(predicate);
+            String firstQueryString = SQLite3Visitor.asString(select);
+            select.setWhereClause(negatedPredicate);
+            String secondQueryString = SQLite3Visitor.asString(select);
+            select.setWhereClause(isNullPredicate);
+            String thirdQueryString = SQLite3Visitor.asString(select);
+            List<String> combinedString = new ArrayList<>();
+            List<String> secondResultSet = null;
+            secondResultSet = ComparatorHelper.getCombinedResultSetNoDuplicates(firstQueryString,
+                    secondQueryString, thirdQueryString, combinedString, true, state, errors);
+            AFLMonitor.getInstance().executeSQLStatement(combinedString.get(0));
+            ComparatorHelper.assumeResultSetsAreEqual(resultSet, secondResultSet, originalQueryString, combinedString,
+                    state);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

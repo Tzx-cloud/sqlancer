@@ -1,10 +1,12 @@
 package sqlancer.sqlite3.oracle.tlp;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import sqlancer.AFLMonitor;
 import sqlancer.ComparatorHelper;
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
@@ -63,27 +65,35 @@ public class SQLite3TLPHavingOracle implements TestOracle<SQLite3GlobalState> {
         select.setHavingClause(null);
         String originalQueryString = SQLite3Visitor.asString(select);
         generatedQueryString = originalQueryString;
-        List<String> resultSet = ComparatorHelper.getResultSetFirstColumnAsString(originalQueryString, errors, state);
+        try {
+            AFLMonitor.getInstance().executeSQLStatement(generatedQueryString);
+            List<String> resultSet = ComparatorHelper.getResultSetFirstColumnAsString(originalQueryString, errors, state);
 
-        SQLite3Expression predicate = gen.getHavingClause();
-        select.setHavingClause(predicate);
-        String firstQueryString = SQLite3Visitor.asString(select);
-        select.setHavingClause(new SQLite3UnaryOperation(UnaryOperator.NOT, predicate));
-        String secondQueryString = SQLite3Visitor.asString(select);
-        select.setHavingClause(new SQLite3PostfixUnaryOperation(PostfixUnaryOperator.ISNULL, predicate));
-        String thirdQueryString = SQLite3Visitor.asString(select);
-        String combinedString = firstQueryString + " UNION ALL " + secondQueryString + " UNION ALL " + thirdQueryString;
-        if (combinedString.contains("EXIST")) {
-            throw new IgnoreMeException();
+            SQLite3Expression predicate = gen.getHavingClause();
+            select.setHavingClause(predicate);
+            String firstQueryString = SQLite3Visitor.asString(select);
+            select.setHavingClause(new SQLite3UnaryOperation(UnaryOperator.NOT, predicate));
+            String secondQueryString = SQLite3Visitor.asString(select);
+            select.setHavingClause(new SQLite3PostfixUnaryOperation(PostfixUnaryOperator.ISNULL, predicate));
+            String thirdQueryString = SQLite3Visitor.asString(select);
+            String combinedString = firstQueryString + " UNION ALL " + secondQueryString + " UNION ALL " + thirdQueryString;
+            if (combinedString.contains("EXIST")) {
+                throw new IgnoreMeException();
+            }
+            AFLMonitor.getInstance().executeSQLStatement(combinedString);
+            List<String> secondResultSet = ComparatorHelper.getResultSetFirstColumnAsString(combinedString, errors, state);
+            if (state.getOptions().logEachSelect()) {
+                state.getLogger().writeCurrent(originalQueryString);
+                state.getLogger().writeCurrent(combinedString);
+            }
+            if (new HashSet<>(resultSet).size() != new HashSet<>(secondResultSet).size()) {
+                throw new AssertionError(originalQueryString + ";\n" + combinedString + ";");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        List<String> secondResultSet = ComparatorHelper.getResultSetFirstColumnAsString(combinedString, errors, state);
-        if (state.getOptions().logEachSelect()) {
-            state.getLogger().writeCurrent(originalQueryString);
-            state.getLogger().writeCurrent(combinedString);
-        }
-        if (new HashSet<>(resultSet).size() != new HashSet<>(secondResultSet).size()) {
-            throw new AssertionError(originalQueryString + ";\n" + combinedString + ";");
-        }
+
+
     }
 
     @Override
