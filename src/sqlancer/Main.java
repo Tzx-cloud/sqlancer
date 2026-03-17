@@ -534,10 +534,12 @@ public final class Main {
                         }
                         //AFLMonitor.getInstance().refreshBuffer();
                         provider.generateDatabaseWithConfigurationTest(state, currentGeneratedActions);
-                    }
+                }finally {
+                    AFLMonitor.getInstance().updateComWeight(currentGeneratedActions);
+                    testCount++;
+                }
 
-                AFLMonitor.getInstance().updateComWeight(currentGeneratedActions);
-                testCount++;
+
             }
             try {
                 logger.getCurrentFileWriter().close();

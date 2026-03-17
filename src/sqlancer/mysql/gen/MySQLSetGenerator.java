@@ -304,7 +304,6 @@ public class MySQLSetGenerator extends BaseConfigurationGenerator {
                 "'module_index'",
                 "'module_adaptive_hash'",
                 "'module_ibuf_system'",
-                "'module_srv'",
                 "'module_ddl'",
                 "'module_dml'",
                 "'module_compress'",

@@ -292,6 +292,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
             dataBaseAfl.delete();
         }
         String url = "jdbc:sqlite:" + dataBase.getAbsolutePath();
+        globalState.getState().logStatement(".open " + dataBaseAfl.getAbsolutePath());
         AFLMonitor.getInstance().executeSQLStatement(".open " + dataBaseAfl.getAbsolutePath());
         return new SQLConnection(DriverManager.getConnection(url));
         //String url = "jdbc:sqlite:" + dataBase.getAbsolutePath();jdbc:sqlite:

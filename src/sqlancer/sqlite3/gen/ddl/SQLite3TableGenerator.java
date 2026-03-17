@@ -66,6 +66,7 @@ public class SQLite3TableGenerator {
         errors.add("parser stack overflow");
         errors.add("malformed JSON");
         errors.add("JSON cannot hold BLOB values");
+        errors.add("[SQLITE_READONLY] Attempt to write a readonly database");
         return new SQLQueryAdapter(sqLite3TableGenerator.sb.toString(), errors, true);
     }
 
@@ -157,7 +158,7 @@ public class SQLite3TableGenerator {
     }
 
     /**
-     * @see https://www.sqlite.org/foreignkeys.html
+     *  <a href="https://www.sqlite.org/foreignkeys.html">...</a>
      */
     private void addForeignKey() {
         assert globalState.getDbmsSpecificOptions().testForeignKeys;

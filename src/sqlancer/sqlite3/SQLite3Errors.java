@@ -166,7 +166,7 @@ public final class SQLite3Errors {
         errors.add("[SQLITE_ERROR] SQL error or missing database (no such table:");
         errors.add("[SQLITE_ERROR] SQL error or missing database (foreign key mismatch");
         errors.add("no such column"); // trigger
-
+        errors.add("[SQLITE_READONLY] Attempt to write a readonly database");
         return errors;
     }
 
