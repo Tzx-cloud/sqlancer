@@ -149,6 +149,7 @@ public class TLPWhereOracle<Z extends Select<J, E, T, C>, J extends Join<E, T, C
 
         String originalQueryString = select.asString();
         generatedQueryString = originalQueryString;
+
         List<String> firstResultSet = ComparatorHelper.getResultSetFirstColumnAsString(originalQueryString, errors,
                 state);
 
@@ -170,11 +171,18 @@ public class TLPWhereOracle<Z extends Select<J, E, T, C>, J extends Join<E, T, C
         List<String> secondResultSet = ComparatorHelper.getCombinedResultSet(firstQueryString, secondQueryString,
                 thirdQueryString, combinedString, !orderBy, state, errors);
 
+        try {
+            AFLMonitor.getInstance().executeSQLStatement(generatedQueryString);
+            AFLMonitor.getInstance().executeSQLStatement(combinedString.get(0));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         ComparatorHelper.assumeResultSetsAreEqual(firstResultSet, secondResultSet, originalQueryString, combinedString,
                 state);
 
         reproducer = new TLPWhereReproducer(firstQueryString, secondQueryString, thirdQueryString, originalQueryString,
                 firstResultSet, orderBy);
+
     }
 
 
