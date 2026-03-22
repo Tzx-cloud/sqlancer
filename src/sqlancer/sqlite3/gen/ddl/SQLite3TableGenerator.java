@@ -67,6 +67,7 @@ public class SQLite3TableGenerator {
         errors.add("malformed JSON");
         errors.add("JSON cannot hold BLOB values");
         errors.add("[SQLITE_READONLY] Attempt to write a readonly database");
+        errors.add("[SQLITE_FULL]");
         return new SQLQueryAdapter(sqLite3TableGenerator.sb.toString(), errors, true);
     }
 

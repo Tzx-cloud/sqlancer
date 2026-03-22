@@ -17,6 +17,7 @@ import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.common.query.SQLQueryProvider;
 import sqlancer.common.query.SQLancerResultSet;
+import sqlancer.mysql.MySQLErrors;
 import sqlancer.sqlite3.gen.*;
 import sqlancer.sqlite3.gen.ddl.SQLite3AlterTable;
 import sqlancer.sqlite3.gen.ddl.SQLite3CreateTriggerGenerator;
@@ -182,7 +183,6 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
                 nrTablesToCreate++;
             }
             int i = 0;
-
             do {
                 SQLQueryAdapter tableQuery = getTableQuery(globalState, i++);
                 globalState.executeStatement(tableQuery);

@@ -56,7 +56,7 @@ public class SQLite3CreateVirtualFTSTableGenerator {
             createFts5Table();
         }
         return new SQLQueryAdapter(sb.toString(),
-                ExpectedErrors.from("unrecognized parameter", "unknown tokenizer: ascii"), true);
+                ExpectedErrors.from("unrecognized parameter", "unknown tokenizer: ascii","[SQLITE_FULL]"), true);
     }
 
     private void createFts4Table() {
