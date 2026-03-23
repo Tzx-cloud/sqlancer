@@ -290,7 +290,7 @@ public class AFLMonitor implements AutoCloseable {
 
         // 3. 检查 weight 是否为 null，避免 NullPointerException
         if (weight != null) {
-            double value = ((newEdges + 1.0) * (testCount+1)*100)
+            double value = ((newEdges + 1.0) * (testCount+1)*10)
                     / (allNewEdges + 1.0);
             weight *= Math.pow(value, 0.6);  // GAMMA 建议 0.5 ~ 1.0
             // 4. 使用相同的键来更新 Map
