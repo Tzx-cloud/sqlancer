@@ -30,7 +30,7 @@ public class AFLMonitor implements AutoCloseable {
     private static final int IPC_RMID = 0;
     private final double alpha = 0.4; // 用于权重更新的学习率
     private static long allNewEdges=0;
-
+    public static long testCount=0;
     private BufferedWriter processWriter;
 
     // JNA 接口
@@ -290,8 +290,8 @@ public class AFLMonitor implements AutoCloseable {
 
         // 3. 检查 weight 是否为 null，避免 NullPointerException
         if (weight != null) {
-            double value = ((newEdges + 1.0) * nrQueries.get())
-                    / ((testcaseNum + 1.0) * (allNewEdges + 1.0));
+            double value = ((newEdges + 1.0) * (testCount+1)*100)
+                    / (allNewEdges + 1.0);
             weight *= Math.pow(value, 0.6);  // GAMMA 建议 0.5 ~ 1.0
             // 4. 使用相同的键来更新 Map
             allParameterCombos.replace(key, weight);

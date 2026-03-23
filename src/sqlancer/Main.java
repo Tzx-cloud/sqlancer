@@ -49,6 +49,7 @@ import sqlancer.yugabyte.ycql.YCQLProvider;
 import sqlancer.yugabyte.ysql.YSQLProvider;
 
 import static java.lang.Thread.sleep;
+import static sqlancer.AFLMonitor.testCount;
 import static sqlancer.BaseConfigurationGenerator.currentGeneratedActions;
 
 public final class Main {
@@ -510,7 +511,6 @@ public final class Main {
             }
 
             state.setConfigurationGenerator(configGenerator);
-            int testCount=0;
             while (testCount<1000000) {
                 if(testCount%configGenerator.getAllActions().length==0) {
                     configGenerator.topKSnapshot();
