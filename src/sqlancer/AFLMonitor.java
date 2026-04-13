@@ -33,6 +33,8 @@ public class AFLMonitor implements AutoCloseable {
     public static long testCount=0;
     private BufferedWriter processWriter;
 
+
+
     // JNA 接口
     public interface CLib extends Library {
         CLib INSTANCE = Native.load("c", CLib.class);
@@ -269,6 +271,7 @@ public class AFLMonitor implements AutoCloseable {
         }
         return hitEdges;
     }
+
 
     public void updateComWeight(List<BaseConfigurationGenerator.ConfigurationAction> actions){
         byte[] oldCoverageBuf = coverageBuf.clone();
