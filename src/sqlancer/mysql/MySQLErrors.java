@@ -23,6 +23,7 @@ public final class MySQLErrors {
         errors.add("Incorrect DECIMAL value:");
         errors.add("Cannot drop default keycache");
         errors.add("cannot contain a COMPRESSED table");
+        errors.add("Data truncation:");
         return errors;
     }
 

@@ -12,8 +12,8 @@ public class TestMySQLFuzzing {
 
     @Test
     public void testMySQLFuzzing() throws InterruptedException {
-        String[] args={"--dbms-path","/home/tzx/sqlite-src-3510200/sqlite3","--map-size","57366","sqlite3","--oracle","WHERE"};
-
+        String[] args={"mysql","--oracle","TLP_WHERE"};
+//--dbms-path","/home/tzx/sqlite-src-3510200/sqlite3","--map-size","57366","mysql",
         Main.main(args);
         //Main.executeMainOnWeb(args);
 //        SqlancerRunner runner = new SqlancerRunner();

@@ -346,25 +346,25 @@ public abstract class BaseConfigurationGenerator  {
 
     private List<ConfigurationAction> selectActionsByWeight() {
 
-        double random = Randomly.getPercentage() * weightSum;
-        double cumulativeProbability = 0.0;
-
-        for (Set<ConfigurationAction> actions : proParameterCombos.keySet()) {
-
-            double probability = proParameterCombos
-                    .getOrDefault(actions, 1.0 / proParameterCombos.size());
-            cumulativeProbability += probability;
-
-            if (random <= cumulativeProbability) {
-                return new ArrayList<>(actions);
-            }
-        }
+//        double random = Randomly.getPercentage() * weightSum;
+//        double cumulativeProbability = 0.0;
+//
+//        for (Set<ConfigurationAction> actions : proParameterCombos.keySet()) {
+//
+//            double probability = proParameterCombos
+//                    .getOrDefault(actions, 1.0 / proParameterCombos.size());
+//            cumulativeProbability += probability;
+//
+//            if (random <= cumulativeProbability) {
+//                return new ArrayList<>(actions);
+//            }
+//        }
         Set randomActionSet = Randomly.fromOptions(proParameterCombos.keySet().toArray(new Set[0]));
         return new ArrayList<>(randomActionSet);
     }
 
     public void generateActions() {
-        if(Randomly.getPercentage()<0.3) {
+        if(Randomly.getPercentage()<0.35) {
             Set randomActionSet = Randomly.fromOptions(allParameterCombos.keySet().toArray(new Set[0]));
             while (proParameterCombos.containsKey(randomActionSet)) {
                 randomActionSet = Randomly.fromOptions(allParameterCombos.keySet().toArray(new Set[0]));

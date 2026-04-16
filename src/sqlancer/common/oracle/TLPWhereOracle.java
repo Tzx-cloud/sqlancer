@@ -169,6 +169,8 @@ public class TLPWhereOracle<Z extends Select<J, E, T, C>, J extends Join<E, T, C
         List<String> secondResultSet = ComparatorHelper.getCombinedResultSet(firstQueryString, secondQueryString,
                 thirdQueryString, combinedString, !orderBy, state, errors);
 
+
+
         try {
             AFLMonitor.getInstance().executeSQLStatement(generatedQueryString);
             AFLMonitor.getInstance().executeSQLStatement(combinedString.get(0));
